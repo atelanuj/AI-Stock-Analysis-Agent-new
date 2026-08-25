@@ -15,16 +15,27 @@ def fundamental_score(f: dict) -> float:
 
 def technical_score(t: dict) -> float:
     score = 50.0
-    for key, up, down in [("above_sma20", 8, -8), ("above_sma50", 10, -10), ("above_sma200", 15, -15)]:
+    for key, up, down in [("above_sma20", 6, -6), ("above_sma50", 8, -8), ("above_sma200", 12, -12)]:
         if t.get(key) is True: score += up
         elif t.get(key) is False: score += down
     rsi = t.get("rsi14")
     if rsi is not None:
-        if 45 <= rsi <= 65: score += 10
-        elif rsi >= 75: score -= 10
+        if 45 <= rsi <= 65: score += 8
+        elif rsi >= 75: score -= 8
         elif rsi <= 30: score -= 5
     macd, signal = t.get("macd"), t.get("macd_signal")
-    if macd is not None and signal is not None: score += 7 if macd > signal else -7
+    if macd is not None and signal is not None: score += 6 if macd > signal else -6
+    if t.get("above_vwap20") is True: score += 4
+    elif t.get("above_vwap20") is False: score -= 4
+    relative_volume = (t.get("volume") or {}).get("relative_volume")
+    one_month = (t.get("timeline_biases") or {}).get("1M", {})
+    if relative_volume is not None and relative_volume >= 1.3:
+        score += 4 if one_month.get("directional_bias") == "BULLISH" else -4 if one_month.get("directional_bias") == "BEARISH" else 0
+    regime = (t.get("market_regime") or {}).get("regime")
+    if regime == "TRENDING UP": score += 5
+    elif regime == "TRENDING DOWN": score -= 5
+    rs = ((t.get("relative_strength") or {}).get("horizons") or {}).get("3M", {}).get("relative_strength_pct")
+    if rs is not None: score += 5 if rs >= 3 else -5 if rs <= -3 else 0
     return round(clamp(score), 1)
 
 def valuation_score(f: dict) -> float:

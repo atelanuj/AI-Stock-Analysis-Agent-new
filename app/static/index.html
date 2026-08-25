@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stock AI Agent V4</title>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock AI Agent V5</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/static/styles.css">
@@ -11,178 +10,171 @@
   <script src="https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script>
 </head>
 <body>
-  <div class="glass-background"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
-  <div class="app-container">
-    <header class="glass-panel">
-      <div class="logo"><i class="fa-solid fa-chart-line"></i> Stock AI Agent <span class="badge">V4</span></div>
-      <nav>
-        <button class="nav-btn active" data-tab="stocks">Stocks</button>
-        <button class="nav-btn" data-tab="mutual-funds">Funds</button>
-        <button class="nav-btn" data-tab="screener">Screener</button>
-        <button class="nav-btn" data-tab="portfolio">Portfolio</button>
-      </nav>
-      <button id="theme-toggle" class="icon-btn" title="Toggle theme"><i class="fa-solid fa-moon"></i></button>
-    </header>
+<div class="glass-background"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+<div class="app-container">
+<header class="glass-panel">
+  <div class="logo"><i class="fa-solid fa-chart-line"></i> Stock AI Agent <span class="badge">V5</span></div>
+  <nav>
+    <button class="nav-btn active" data-tab="stocks">Stocks</button><button class="nav-btn" data-tab="mutual-funds">Funds</button><button class="nav-btn" data-tab="screener">Screener</button><button class="nav-btn" data-tab="portfolio">Portfolio</button><button class="nav-btn" data-tab="watchlist">Watchlist</button>
+  </nav>
+  <button id="theme-toggle" class="icon-btn" title="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+</header>
+<main class="content-area">
 
-    <main class="content-area">
-      <section id="tab-stocks" class="tab-pane active fade-in">
-        <div class="glass-panel search-container">
-          <div class="search-bar">
-            <select id="stock-market-select" class="glass-input">
-              <option value="IN">🇮🇳 India (NSE)</option>
-              <option value="US">🇺🇸 US (NYSE/NASDAQ)</option>
-            </select>
-            <input id="stock-search-input" class="glass-input" placeholder="RELIANCE or AAPL" autocomplete="off">
-            <button id="stock-search-btn" class="glass-btn primary"><i class="fa-solid fa-magnifying-glass"></i> Analyze</button>
-          </div>
+<section id="tab-stocks" class="tab-pane active fade-in">
+  <div class="glass-panel search-container"><div class="search-bar">
+    <select id="stock-market-select" class="glass-input"><option value="IN">🇮🇳 India (NSE)</option><option value="US">🇺🇸 US (NYSE/NASDAQ)</option></select>
+    <input id="stock-search-input" class="glass-input" placeholder="RELIANCE or AAPL" autocomplete="off"><button id="stock-search-btn" class="glass-btn primary"><i class="fa-solid fa-magnifying-glass"></i> Analyze</button>
+  </div></div>
+  <div id="stock-loading" class="loading-state hidden"><div class="spinner"></div><p>Collecting market, technical, event and benchmark evidence...</p></div>
+  <div id="stock-error" class="error-state hidden glass-panel"><i class="fa-solid fa-triangle-exclamation"></i><p id="stock-error-msg"></p></div>
+
+  <div id="stock-results" class="results-container hidden fade-in">
+    <div class="stock-header glass-panel">
+      <div class="stock-title"><h1 id="stock-name">--</h1><span id="stock-symbol" class="badge">--</span></div>
+      <div class="stock-actions"><button id="stock-watch-btn" class="glass-btn"><i class="fa-regular fa-star"></i> Watch</button><div class="stock-price-block"><h2 id="stock-price">--</h2><span id="stock-market-badge" class="badge variant">--</span></div></div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="main-column">
+        <div class="glass-panel chart-container candle-panel">
+          <div class="section-heading chart-heading"><div><h3>Price & Candlestick Analysis</h3><p class="text-muted text-sm">Toggle line/candles and timeframe. Dynamic support/resistance zones follow the selected horizon.</p></div>
+            <div class="chart-controls">
+              <div id="chart-type-toggle" class="segmented-control"><button type="button" class="segment-btn active" data-chart-type="candlestick">Candles</button><button type="button" class="segment-btn" data-chart-type="line">Line</button></div>
+              <div id="chart-period-toggle" class="segmented-control timeframe-control"><button type="button" class="segment-btn" data-period="5d">1W</button><button type="button" class="segment-btn" data-period="1mo">1M</button><button type="button" class="segment-btn active" data-period="3mo">3M</button><button type="button" class="segment-btn" data-period="6mo">6M</button><button type="button" class="segment-btn" data-period="1y">1Y</button></div>
+            </div>
+          </div><div id="candlestick-chart" class="plotly-chart"></div>
         </div>
 
-        <div id="stock-loading" class="loading-state hidden"><div class="spinner"></div><p>Collecting market data and synthesizing research...</p></div>
-        <div id="stock-error" class="error-state hidden glass-panel"><i class="fa-solid fa-triangle-exclamation"></i><p id="stock-error-msg"></p></div>
-
-        <div id="stock-results" class="results-container hidden fade-in">
-          <div class="stock-header glass-panel">
-            <div class="stock-title"><h1 id="stock-name">--</h1><span id="stock-symbol" class="badge">--</span></div>
-            <div class="stock-price-block"><h2 id="stock-price">--</h2><span id="stock-market-badge" class="badge variant">--</span></div>
+        <div class="glass-panel trend-card">
+          <div class="ai-header"><h3><i class="fa-solid fa-wave-square"></i> Multi-Timeframe Technical Outlook</h3><span id="trend-confidence" class="badge">--</span></div>
+          <div class="trend-summary-grid">
+            <div class="mini-kpi"><span>Trend alignment</span><b id="trend-alignment">--</b><small id="trend-alignment-detail">--</small></div>
+            <div class="mini-kpi"><span>Market regime <button class="info-btn" data-explain="regime">ⓘ</button></span><b id="trend-regime">--</b><small id="trend-regime-detail">--</small></div>
+            <div class="mini-kpi"><span>Relative strength <button class="info-btn" data-explain="relative">ⓘ</button></span><b id="trend-relative">--</b><small id="trend-relative-detail">--</small></div>
           </div>
-
-          <div class="dashboard-grid">
-            <div class="main-column">
-              <div class="glass-panel chart-container candle-panel">
-                <div class="section-heading chart-heading">
-                  <div><h3>Interactive Price & Candlestick Analysis</h3><p class="text-muted text-sm">Switch between candle and line views. Support/resistance and candle-pattern markers remain available.</p></div>
-                  <div class="chart-controls">
-                    <div id="chart-type-toggle" class="segmented-control" aria-label="Chart type">
-                      <button type="button" class="segment-btn active" data-chart-type="candlestick"><i class="fa-solid fa-chart-column"></i> Candles</button>
-                      <button type="button" class="segment-btn" data-chart-type="line"><i class="fa-solid fa-chart-line"></i> Line</button>
-                    </div>
-                    <div id="chart-period-toggle" class="segmented-control timeframe-control" aria-label="Chart timeframe">
-                      <button type="button" class="segment-btn" data-period="5d">1W</button>
-                      <button type="button" class="segment-btn" data-period="1mo">1M</button>
-                      <button type="button" class="segment-btn active" data-period="3mo">3M</button>
-                      <button type="button" class="segment-btn" data-period="6mo">6M</button>
-                      <button type="button" class="segment-btn" data-period="1y">1Y</button>
-                    </div>
-                  </div>
-                </div>
-                <div id="candlestick-chart" class="plotly-chart"></div>
-              </div>
-
-              <div class="glass-panel trend-card">
-                <div class="ai-header"><h3><i class="fa-solid fa-wave-square"></i> Technical Trend Outlook</h3><span id="trend-confidence" class="badge">--</span></div>
-                <div class="trend-topline">
-                  <div><div class="rating-label">Multi-horizon directional bias</div><p class="text-muted text-sm">Select a horizon to inspect the supporting signals.</p></div>
-                  <div class="trend-levels"><span>20D Support <b id="trend-support">--</b></span><span>20D Resistance <b id="trend-resistance">--</b></span></div>
-                </div>
-                <div id="trend-timeframes" class="trend-timeframes"></div>
-                <ul id="trend-reasons" class="compact-list"></ul>
-                <p class="text-muted text-sm">Biases are heuristic technical estimates based on momentum, moving averages, RSI, MACD and recent candle patterns. Confidence measures signal agreement, not probability of profit.</p>
-              </div>
-
-              <div class="glass-panel ai-thesis-card">
-                <div class="ai-header"><h3><i class="fa-solid fa-robot"></i> Nemotron Synthesis</h3><span id="ai-confidence" class="badge">Confidence: --</span></div>
-                <div class="rating-banner"><div class="rating-label">AI Rating</div><div id="ai-rating" class="rating-value">--</div></div>
-                <p id="ai-thesis-text" class="thesis-text">--</p>
-                <div class="ai-details-grid">
-                  <div class="ai-list positives"><h4><i class="fa-solid fa-circle-check"></i> Positives</h4><ul id="ai-positives-list"></ul></div>
-                  <div class="ai-list risks"><h4><i class="fa-solid fa-triangle-exclamation"></i> Risks</h4><ul id="ai-risks-list"></ul></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="side-column">
-              <div class="glass-panel scores-panel">
-                <h3>Algorithmic Scores</h3>
-                <div class="score-grid">
-                  <div class="score-item"><div class="score-label">Overall</div><div class="score-bar-container"><div id="score-overall" class="score-bar"></div></div><div id="score-overall-val" class="score-val">--</div></div>
-                  <div class="score-item"><div class="score-label">Fundamental</div><div class="score-bar-container"><div id="score-fund" class="score-bar"></div></div><div id="score-fund-val" class="score-val">--</div></div>
-                  <div class="score-item"><div class="score-label">Technical</div><div class="score-bar-container"><div id="score-tech" class="score-bar"></div></div><div id="score-tech-val" class="score-val">--</div></div>
-                  <div class="score-item"><div class="score-label">Valuation</div><div class="score-bar-container"><div id="score-val" class="score-bar"></div></div><div id="score-val-val" class="score-val">--</div></div>
-                  <div class="score-item"><div class="score-label">Risk</div><div class="score-bar-container"><div id="score-risk" class="score-bar"></div></div><div id="score-risk-val" class="score-val">--</div></div>
-                </div>
-              </div>
-
-              <div class="glass-panel metrics-panel">
-                <h3>Key Metrics</h3>
-                <div class="metrics-grid">
-                  <div id="metric-pe" class="metric-box metric-neutral"><div class="m-label">P/E</div><div id="m-pe" class="m-val">--</div><div class="metric-signal">Context needed</div></div>
-                  <div id="metric-mcap" class="metric-box metric-neutral"><div class="m-label">Market Cap</div><div id="m-mcap" class="m-val">--</div><div class="metric-signal">Size proxy</div></div>
-                  <div id="metric-roe" class="metric-box metric-neutral"><div class="m-label">ROE</div><div id="m-roe" class="m-val">--</div><div class="metric-signal">Context needed</div></div>
-                  <div id="metric-rsi" class="metric-box metric-neutral"><div class="m-label">RSI 14</div><div id="m-rsi" class="m-val">--</div><div class="metric-signal">Context needed</div></div>
-                </div>
-                <div class="metric-legend" aria-label="Metric color legend"><span class="legend-dot good"></span> Favorable <span class="legend-dot caution"></span> Caution / context <span class="legend-dot bad"></span> Risk / unfavorable</div>
-              </div>
-
-              <div class="glass-panel">
-                <h3>Recent Candle Patterns</h3>
-                <div id="pattern-list" class="pattern-list"></div>
-              </div>
-
-              <div class="glass-panel news-panel"><h3>Recent News</h3><div id="news-list" class="news-list"></div></div>
-            </div>
+          <div id="trend-timeframes" class="trend-timeframes"></div>
+          <div class="levels-grid">
+            <div class="level-card good"><span id="support-label">Selected support zone</span><b id="trend-support">--</b><small id="support-meta">--</small></div>
+            <div class="level-card bad"><span id="resistance-label">Selected resistance zone</span><b id="trend-resistance">--</b><small id="resistance-meta">--</small></div>
           </div>
+          <ul id="trend-reasons" class="compact-list"></ul>
+          <p class="text-muted text-sm">Signal strength measures agreement among indicators, not the probability of profit.</p>
         </div>
-      </section>
 
-      <section id="tab-mutual-funds" class="tab-pane hidden fade-in">
-        <div class="glass-panel search-container">
-          <div class="search-bar">
-            <select id="mf-market-select" class="glass-input"><option value="IN">🇮🇳 India Mutual Funds</option><option value="US">🇺🇸 US Mutual Funds / ETFs</option></select>
-            <div class="autocomplete-wrapper"><input id="mf-search-input" class="glass-input" placeholder="Search fund name or enter US ticker"><div id="mf-autocomplete" class="autocomplete-dropdown hidden"></div></div>
-            <button id="mf-search-btn" class="glass-btn primary"><i class="fa-solid fa-chart-pie"></i> Analyze</button>
-          </div>
-        </div>
-        <div id="mf-loading" class="loading-state hidden"><div class="spinner"></div><p>Analyzing fund history and risk...</p></div>
-        <div id="mf-error" class="error-state hidden glass-panel"><p id="mf-error-msg"></p></div>
-        <div id="mf-results" class="results-container hidden fade-in">
-          <div class="stock-header glass-panel"><div class="stock-title"><h1 id="mf-name">--</h1><span id="mf-category" class="badge">--</span></div><div class="stock-price-block"><h2 id="mf-nav">--</h2><span id="mf-date" class="badge variant">--</span></div></div>
-          <div class="dashboard-grid">
-            <div class="main-column">
-              <div class="glass-panel chart-container"><h3>NAV / Price History</h3><canvas id="mf-nav-chart"></canvas></div>
-              <div class="glass-panel chart-container"><h3>Period Returns</h3><canvas id="mf-returns-chart"></canvas></div>
-            </div>
-            <div class="side-column">
-              <div class="glass-panel"><div class="rating-label">Fund Score</div><div id="mf-score" class="rating-value">--</div><div id="mf-rating" class="badge variant">--</div><p id="mf-summary" class="thesis-text"></p></div>
-              <div class="glass-panel metrics-panel"><h3>Returns</h3><div class="metrics-grid"><div class="metric-box"><div class="m-label">1Y</div><div id="mf-ret-1y" class="m-val">--</div></div><div class="metric-box"><div class="m-label">3Y Ann.</div><div id="mf-ret-3y" class="m-val">--</div></div><div class="metric-box"><div class="m-label">5Y Ann.</div><div id="mf-ret-5y" class="m-val">--</div></div><div class="metric-box"><div class="m-label">6M</div><div id="mf-ret-6m" class="m-val">--</div></div></div></div>
-              <div class="glass-panel metrics-panel"><h3>Risk</h3><div class="metrics-grid"><div class="metric-box"><div class="m-label">Volatility</div><div id="mf-vol" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Max Drawdown</div><div id="mf-mdd" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Positive Days</div><div id="mf-positive" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Expense Ratio</div><div id="mf-expense" class="m-val">--</div></div></div></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="tab-screener" class="tab-pane hidden fade-in">
         <div class="glass-panel">
-          <div class="section-heading"><div><h2><i class="fa-solid fa-filter"></i> Global Screener</h2><p class="text-muted">Screen stocks or funds independently in India and the US.</p></div></div>
-          <div class="screener-controls">
-            <select id="screen-asset" class="glass-input"><option value="STOCK">Stocks</option><option value="FUND">Mutual Funds / ETFs</option></select>
-            <select id="screen-market" class="glass-input"><option value="IN">🇮🇳 India</option><option value="US">🇺🇸 US</option></select>
-            <input id="screen-min-score" type="number" class="glass-input" value="50" min="0" max="100" placeholder="Min score">
-            <select id="screen-trend" class="glass-input"><option value="ANY">Any trend</option><option value="BULLISH">Bullish</option><option value="NEUTRAL">Neutral</option><option value="BEARISH">Bearish</option></select>
-            <button id="screen-run" class="glass-btn primary"><i class="fa-solid fa-play"></i> Run Screener</button>
+          <div class="section-heading"><div><h3>Technical Diagnostics</h3><p class="text-muted text-sm">Participation, volatility, momentum and price structure.</p></div></div>
+          <div class="diagnostic-grid">
+            <div class="mini-kpi"><span>Relative Volume <button class="info-btn" data-explain="volume">ⓘ</button></span><b id="tech-rvol">--</b><small id="tech-volume-status">--</small></div>
+            <div class="mini-kpi"><span>VWAP 20D <button class="info-btn" data-explain="vwap">ⓘ</button></span><b id="tech-vwap">--</b><small id="tech-vwap-status">--</small></div>
+            <div class="mini-kpi"><span>ATR 14 <button class="info-btn" data-explain="atr">ⓘ</button></span><b id="tech-atr">--</b><small id="tech-atr-pct">--</small></div>
+            <div class="mini-kpi"><span>ADX 14 <button class="info-btn" data-explain="adx">ⓘ</button></span><b id="tech-adx">--</b><small id="tech-adx-status">--</small></div>
+            <div class="mini-kpi"><span>Breakout status</span><b id="tech-breakout">--</b><small id="tech-breakout-detail">--</small></div>
+            <div class="mini-kpi"><span>1M benchmark delta</span><b id="tech-benchmark-delta">--</b><small id="tech-benchmark-name">--</small></div>
           </div>
-          <textarea id="screen-input" class="glass-input screener-input" placeholder="Optional stock symbols, comma separated. Leave blank to use the built-in popular market universe."></textarea>
-          <p id="screen-help" class="text-muted text-sm">For stocks: enter symbols or leave blank. For funds: enter scheme codes/tickers, or type a search phrase.</p>
         </div>
-        <div id="screen-loading" class="loading-state hidden"><div class="spinner"></div><p>Screening candidates...</p></div>
-        <div id="screen-error" class="error-state hidden glass-panel"><p id="screen-error-msg"></p></div>
-        <div id="screen-results" class="glass-panel hidden"><div class="table-wrap"><table class="data-table"><thead id="screen-head"></thead><tbody id="screen-body"></tbody></table></div><p id="screen-note" class="text-muted text-sm"></p></div>
-      </section>
 
-      <section id="tab-portfolio" class="tab-pane hidden fade-in">
+        <div class="two-panel-grid">
+          <div class="glass-panel"><h3>Important Price Levels</h3><div id="important-levels" class="level-list"></div></div>
+          <div class="glass-panel"><h3>Risk / Reward Setup <button class="info-btn" data-explain="riskreward">ⓘ</button></h3><div id="risk-reward" class="rr-grid"></div></div>
+        </div>
+
         <div class="glass-panel">
-          <div class="section-heading"><div><h2><i class="fa-solid fa-briefcase"></i> Mixed Portfolio Analyzer</h2><p class="text-muted">Stocks and funds from India/US. Mixed-currency totals are flagged because V4 does not convert FX.</p></div><button id="portfolio-add" class="glass-btn"><i class="fa-solid fa-plus"></i> Add holding</button></div>
-          <div class="table-wrap"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Symbol / Scheme Code</th><th>Quantity</th><th>Avg Price / NAV</th><th></th></tr></thead><tbody id="portfolio-input-body"></tbody></table></div>
-          <button id="portfolio-run" class="glass-btn primary portfolio-run"><i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Portfolio</button>
+          <div class="section-heading"><div><h3><i class="fa-solid fa-flask"></i> Historical Strategy Backtest</h3><p class="text-muted text-sm">Transparent in-sample test of V5 technical confluence rules.</p></div><button id="backtest-run" class="glass-btn">Run / Refresh</button></div>
+          <div id="backtest-loading" class="text-muted text-sm">Backtest loads after stock analysis.</div>
+          <div id="backtest-content" class="hidden"><div id="backtest-kpis" class="diagnostic-grid"></div><div id="backtest-rules" class="text-muted text-sm"></div></div>
         </div>
-        <div id="portfolio-loading" class="loading-state hidden"><div class="spinner"></div><p>Analyzing holdings...</p></div>
-        <div id="portfolio-error" class="error-state hidden glass-panel"><p id="portfolio-error-msg"></p></div>
-        <div id="portfolio-results" class="hidden fade-in">
-          <div class="glass-panel metrics-panel"><h3>Portfolio Summary</h3><div class="metrics-grid"><div class="metric-box"><div class="m-label">Market Value*</div><div id="pf-value" class="m-val">--</div></div><div class="metric-box"><div class="m-label">P&L*</div><div id="pf-pnl" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Quality Score</div><div id="pf-quality" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Largest Weight</div><div id="pf-concentration" class="m-val">--</div></div></div><p class="text-muted text-sm">*Not FX-normalized when INR and USD holdings are mixed.</p></div>
-          <div class="glass-panel"><div id="pf-warnings"></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Holding</th><th>Asset</th><th>Market</th><th>Weight</th><th>P&L</th><th>Score</th><th>Rating</th></tr></thead><tbody id="pf-body"></tbody></table></div></div>
+
+        <div class="glass-panel ai-thesis-card">
+          <div class="ai-header"><h3><i class="fa-solid fa-robot"></i> Nemotron Synthesis</h3><span id="ai-confidence" class="badge">Confidence: --</span></div>
+          <div class="rating-banner"><div class="rating-label">AI Rating</div><div id="ai-rating" class="rating-value">--</div></div><p id="ai-thesis-text" class="thesis-text">--</p>
+          <div class="ai-details-grid"><div class="ai-list positives"><h4><i class="fa-solid fa-circle-check"></i> Positives</h4><ul id="ai-positives-list"></ul></div><div class="ai-list risks"><h4><i class="fa-solid fa-triangle-exclamation"></i> Risks</h4><ul id="ai-risks-list"></ul></div></div>
         </div>
-      </section>
-    </main>
+      </div>
+
+      <div class="side-column">
+        <div class="glass-panel scores-panel"><h3>Algorithmic Scores</h3><div class="score-grid">
+          <div class="score-item"><div class="score-label">Overall</div><div class="score-bar-container"><div id="score-overall" class="score-bar"></div></div><div id="score-overall-val" class="score-val">--</div></div>
+          <div class="score-item"><div class="score-label">Fundamental</div><div class="score-bar-container"><div id="score-fund" class="score-bar"></div></div><div id="score-fund-val" class="score-val">--</div></div>
+          <div class="score-item"><div class="score-label">Technical</div><div class="score-bar-container"><div id="score-tech" class="score-bar"></div></div><div id="score-tech-val" class="score-val">--</div></div>
+          <div class="score-item"><div class="score-label">Valuation</div><div class="score-bar-container"><div id="score-val" class="score-bar"></div></div><div id="score-val-val" class="score-val">--</div></div>
+          <div class="score-item"><div class="score-label">Risk</div><div class="score-bar-container"><div id="score-risk" class="score-bar"></div></div><div id="score-risk-val" class="score-val">--</div></div>
+        </div></div>
+
+        <div class="glass-panel metrics-panel"><h3>Key Metrics</h3><div class="metrics-grid">
+          <div id="metric-pe" class="metric-box metric-neutral"><div class="m-label">P/E <button class="info-btn" data-explain="pe">ⓘ</button></div><div id="m-pe" class="m-val">--</div><div class="metric-signal">Context needed</div></div>
+          <div id="metric-mcap" class="metric-box metric-neutral"><div class="m-label">Market Cap <button class="info-btn" data-explain="mcap">ⓘ</button></div><div id="m-mcap" class="m-val">--</div><div class="metric-signal">Size proxy</div></div>
+          <div id="metric-roe" class="metric-box metric-neutral"><div class="m-label">ROE <button class="info-btn" data-explain="roe">ⓘ</button></div><div id="m-roe" class="m-val">--</div><div class="metric-signal">Context needed</div></div>
+          <div id="metric-rsi" class="metric-box metric-neutral"><div class="m-label">RSI 14 <button class="info-btn" data-explain="rsi">ⓘ</button></div><div id="m-rsi" class="m-val">--</div><div class="metric-signal">Context needed</div></div>
+        </div><div class="metric-legend"><span class="legend-dot good"></span> Favorable <span class="legend-dot caution"></span> Caution/context <span class="legend-dot bad"></span> Risk/unfavorable</div></div>
+
+        <div id="event-panel" class="glass-panel"><h3>Event Risk</h3><div id="event-list"></div></div>
+        <div class="glass-panel"><h3>Recent Candle Patterns</h3><div id="pattern-list" class="pattern-list"></div></div>
+        <div class="glass-panel news-panel"><h3>Recent News</h3><div id="news-list" class="news-list"></div></div>
+      </div>
+    </div>
   </div>
-  <script src="/static/app.js"></script>
-</body>
-</html>
+</section>
+
+<section id="tab-mutual-funds" class="tab-pane hidden fade-in">
+  <div class="glass-panel search-container"><div class="search-bar"><select id="mf-market-select" class="glass-input"><option value="IN">🇮🇳 India Mutual Funds</option><option value="US">🇺🇸 US Mutual Funds / ETFs</option></select><div class="autocomplete-wrapper"><input id="mf-search-input" class="glass-input" placeholder="Search fund name or enter US ticker"><div id="mf-autocomplete" class="autocomplete-dropdown hidden"></div></div><button id="mf-search-btn" class="glass-btn primary"><i class="fa-solid fa-chart-pie"></i> Analyze</button></div></div>
+  <div id="mf-loading" class="loading-state hidden"><div class="spinner"></div><p>Analyzing returns, consistency, risk, costs and benchmark behavior...</p></div><div id="mf-error" class="error-state hidden glass-panel"><p id="mf-error-msg"></p></div>
+  <div id="mf-results" class="results-container hidden fade-in">
+    <div class="stock-header glass-panel"><div class="stock-title"><h1 id="mf-name">--</h1><span id="mf-category" class="badge">--</span></div><div class="stock-price-block"><h2 id="mf-nav">--</h2><span id="mf-date" class="badge variant">--</span></div></div>
+    <div class="dashboard-grid"><div class="main-column"><div class="glass-panel chart-container"><h3>NAV / Price History</h3><canvas id="mf-nav-chart"></canvas></div><div class="glass-panel chart-container"><h3>Period Returns</h3><canvas id="mf-returns-chart"></canvas></div>
+      <div class="glass-panel"><h3>Fund Score Breakdown</h3><div id="mf-score-breakdown" class="score-grid"></div></div>
+    </div><div class="side-column">
+      <div class="glass-panel"><div class="rating-label">Fund Score</div><div id="mf-score" class="rating-value">--</div><div id="mf-rating" class="badge variant">--</div><p id="mf-summary" class="thesis-text"></p></div>
+      <div class="glass-panel metrics-panel"><h3>Returns</h3><div class="metrics-grid"><div class="metric-box"><div class="m-label">1Y</div><div id="mf-ret-1y" class="m-val">--</div></div><div class="metric-box"><div class="m-label">3Y Ann.</div><div id="mf-ret-3y" class="m-val">--</div></div><div class="metric-box"><div class="m-label">5Y Ann.</div><div id="mf-ret-5y" class="m-val">--</div></div><div class="metric-box"><div class="m-label">6M</div><div id="mf-ret-6m" class="m-val">--</div></div></div></div>
+      <div class="glass-panel metrics-panel"><h3>Risk / Consistency</h3><div class="metrics-grid"><div class="metric-box"><div class="m-label">Volatility</div><div id="mf-vol" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Max Drawdown</div><div id="mf-mdd" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Sharpe</div><div id="mf-sharpe" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Sortino</div><div id="mf-sortino" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Positive rolling 1Y</div><div id="mf-consistency" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Expense Ratio</div><div id="mf-expense" class="m-val">--</div></div></div></div>
+      <div class="glass-panel metrics-panel"><h3>Benchmark</h3><div class="metrics-grid"><div class="metric-box"><div class="m-label">Benchmark</div><div id="mf-benchmark" class="m-val small-val">--</div></div><div class="metric-box"><div class="m-label">Alpha</div><div id="mf-alpha" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Tracking Error</div><div id="mf-tracking" class="m-val">--</div></div><div class="metric-box"><div class="m-label">AUM</div><div id="mf-aum" class="m-val">--</div></div></div></div>
+    </div></div>
+  </div>
+</section>
+
+<section id="tab-screener" class="tab-pane hidden fade-in">
+  <div class="glass-panel">
+    <div class="section-heading"><div><h2><i class="fa-solid fa-filter"></i> Global Screener V5</h2><p class="text-muted">Scan count controls how many candidates are evaluated. Result count controls how many matching rows are shown.</p></div></div>
+    <div class="screener-controls v5-controls">
+      <select id="screen-asset" class="glass-input"><option value="STOCK">Stocks</option><option value="FUND">Mutual Funds / ETFs</option></select>
+      <select id="screen-market" class="glass-input"><option value="IN">🇮🇳 India</option><option value="US">🇺🇸 US</option></select>
+      <select id="screen-universe" class="glass-input"></select>
+      <select id="screen-scan-count" class="glass-input"><option>25</option><option selected>50</option><option>100</option><option>250</option><option>500</option></select>
+      <select id="screen-result-count" class="glass-input"><option>10</option><option>25</option><option selected>50</option><option>100</option><option>250</option><option>500</option></select>
+      <input id="screen-min-score" type="number" class="glass-input" value="50" min="0" max="100" placeholder="Min score">
+      <select id="screen-trend" class="glass-input"><option value="ANY">Any trend</option><option value="BULLISH">Bullish</option><option value="NEUTRAL">Neutral</option><option value="BEARISH">Bearish</option></select>
+      <button id="screen-run" class="glass-btn primary"><i class="fa-solid fa-play"></i> Run Screener</button>
+    </div>
+    <textarea id="screen-input" class="glass-input screener-input" placeholder="Optional stock symbols, comma separated. Blank = selected universe."></textarea>
+    <details class="advanced-filter"><summary>Advanced filters</summary>
+      <div id="stock-filter-grid" class="filter-grid">
+        <label>Min Market Cap<input id="flt-mcap" type="number" class="glass-input" placeholder="e.g. 10000000000"></label><label>Max P/E<input id="flt-pe" type="number" class="glass-input" placeholder="30"></label><label>Min ROE %<input id="flt-roe" type="number" class="glass-input" placeholder="15"></label><label>Max Debt/Equity<input id="flt-debt" type="number" class="glass-input" placeholder="100"></label><label>Min Revenue Growth %<input id="flt-revg" type="number" class="glass-input" placeholder="10"></label><label>RSI Min<input id="flt-rsi-min" type="number" class="glass-input" placeholder="40"></label><label>RSI Max<input id="flt-rsi-max" type="number" class="glass-input" placeholder="65"></label><label class="check-label"><input id="flt-sma200" type="checkbox"> Price above SMA200</label><label class="check-label"><input id="flt-breakout" type="checkbox"> Confirmed volume breakout</label>
+      </div>
+      <div id="fund-filter-grid" class="filter-grid hidden">
+        <label>Min 1Y return %<input id="ff-1y" type="number" class="glass-input"></label><label>Min 3Y annualized %<input id="ff-3y" type="number" class="glass-input"></label><label>Max drawdown magnitude %<input id="ff-mdd" type="number" class="glass-input" placeholder="30"></label><label>Max volatility %<input id="ff-vol" type="number" class="glass-input"></label><label>Max expense ratio %<input id="ff-exp" type="number" class="glass-input"></label><label>Min AUM<input id="ff-aum" type="number" class="glass-input"></label>
+      </div>
+    </details>
+    <p id="screen-help" class="text-muted text-sm"></p>
+  </div>
+  <div id="screen-loading" class="loading-state hidden"><div class="spinner"></div><p>Screening candidates. Large universes can take time with free data sources...</p></div><div id="screen-error" class="error-state hidden glass-panel"><p id="screen-error-msg"></p></div>
+  <div id="screen-results" class="glass-panel hidden"><div id="screen-summary" class="screen-summary"></div><div class="table-wrap"><table class="data-table"><thead id="screen-head"></thead><tbody id="screen-body"></tbody></table></div><p id="screen-note" class="text-muted text-sm"></p></div>
+</section>
+
+<section id="tab-portfolio" class="tab-pane hidden fade-in">
+  <div class="glass-panel"><div class="section-heading"><div><h2><i class="fa-solid fa-briefcase"></i> FX-Normalized Portfolio Analyzer</h2><p class="text-muted">India + US stocks/funds are converted into a selected base currency using the latest available USD/INR quote.</p></div><div class="inline-actions"><select id="portfolio-base" class="glass-input"><option value="INR">Base: INR</option><option value="USD">Base: USD</option></select><button id="portfolio-add" class="glass-btn"><i class="fa-solid fa-plus"></i> Add holding</button></div></div>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Symbol / Scheme</th><th>Quantity</th><th>Avg Price / NAV</th><th></th></tr></thead><tbody id="portfolio-input-body"></tbody></table></div><button id="portfolio-run" class="glass-btn primary portfolio-run">Analyze Portfolio</button>
+  </div>
+  <div id="portfolio-loading" class="loading-state hidden"><div class="spinner"></div><p>Analyzing holdings and normalizing FX...</p></div><div id="portfolio-error" class="error-state hidden glass-panel"><p id="portfolio-error-msg"></p></div>
+  <div id="portfolio-results" class="hidden fade-in"><div class="glass-panel metrics-panel"><h3>Portfolio Summary</h3><div class="metrics-grid"><div class="metric-box"><div class="m-label">Market Value</div><div id="pf-value" class="m-val">--</div></div><div class="metric-box"><div class="m-label">P&L</div><div id="pf-pnl" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Quality</div><div id="pf-quality" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Largest Weight</div><div id="pf-concentration" class="m-val">--</div></div></div><p id="pf-fx-note" class="text-muted text-sm"></p></div><div class="glass-panel"><div id="pf-warnings"></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Holding</th><th>Asset</th><th>Market</th><th>Weight</th><th>P&L</th><th>Score</th><th>Rating</th></tr></thead><tbody id="pf-body"></tbody></table></div></div></div>
+</section>
+
+<section id="tab-watchlist" class="tab-pane hidden fade-in">
+  <div class="glass-panel"><div class="section-heading"><div><h2><i class="fa-regular fa-star"></i> Watchlist & Signal Alerts</h2><p class="text-muted">Saved locally in your browser. Check support/breakout, RSI and near-term company event alerts.</p></div><button id="watch-check" class="glass-btn primary">Check now</button></div><div id="watchlist-items" class="watchlist-grid"></div></div>
+  <div id="watch-loading" class="loading-state hidden"><div class="spinner"></div><p>Checking watchlist...</p></div><div id="watch-results" class="glass-panel hidden"><h3>Triggered Alerts</h3><div id="watch-alerts"></div></div>
+</section>
+
+</main></div>
+
+<div id="explain-modal" class="modal hidden"><div class="modal-card glass-panel"><button id="explain-close" class="icon-btn modal-close"><i class="fa-solid fa-xmark"></i></button><h3 id="explain-title">Metric</h3><div id="explain-body" class="modal-body"></div></div></div>
+<script src="/static/app.js"></script>
+</body></html>
