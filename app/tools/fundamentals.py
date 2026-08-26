@@ -1,6 +1,6 @@
 import math
-import yfinance as yf
-from app.tools.market_data import yahoo_symbol
+from app.tools.data_provider import get_info
+
 
 def _num(value):
     try:
@@ -11,8 +11,9 @@ def _num(value):
     except (TypeError, ValueError):
         return None
 
-def get_fundamentals(symbol: str, market: str | None = None) -> dict:
-    info = yf.Ticker(yahoo_symbol(symbol, market)).info or {}
+
+def get_fundamentals(symbol: str, market: str | None = None, info: dict | None = None) -> dict:
+    info = info if info is not None else get_info(symbol, market)
     return {
         "market_cap": _num(info.get("marketCap")),
         "enterprise_value": _num(info.get("enterpriseValue")),

@@ -1,8 +1,8 @@
-# V5 Feature Changes
+# V5 / V5.2 Cumulative Feature Changes
 
 ## Technical analysis
 
-- Dynamic support/resistance zones for 1W, 1M, 3M, 6M and 1Y
+- Dynamic support/resistance zones for 1D, 1W, 1M, 3M, 6M and 1Y
 - Nearest + major support and resistance
 - ATR-aware zone clustering and touch strength
 - Volume participation / relative volume
@@ -24,7 +24,7 @@
 - Explain-this modal for key technical concepts
 - Clear distinction between historical return and future directional bias
 - Dynamic levels update when the selected horizon changes
-- Line/candlestick chart toggle and 1W/1M/3M/6M/1Y chart ranges
+- Line/candlestick chart toggle and 1D/1W/1M/3M/6M/1Y chart ranges
 
 ## Stock screener
 
@@ -70,3 +70,8 @@
 - Signal agreement is not a probability of profit
 - Risk/reward levels are illustrative technical references, not personalized trade instructions
 - Backtests and pattern hit rates are in-sample historical evidence
+
+
+## V5.2 performance layer
+
+See `V5_2_FEATURES.md` for progressive loading, Redis cache partitioning, batched stock history, lazy AI/backtests and 1D additions.

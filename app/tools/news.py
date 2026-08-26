@@ -3,6 +3,8 @@ from urllib.parse import urlparse
 import re
 import yfinance as yf
 
+from app.cache.redis_cache import get_json, set_json
+from app.config import settings
 from app.tools.market_data import yahoo_symbol
 
 _HIGH = re.compile(r"earnings|results|profit|loss|guidance|merger|acquisition|acquire|lawsuit|fraud|investigation|regulator|sec\b|sebi\b|fda\b|bankruptcy|default|downgrade|upgrade|layoff|ceo|cfo|dividend|buyback|split|offering", re.I)
@@ -38,8 +40,14 @@ def _classify(text: str) -> tuple[str, str, str]:
     return importance, sentiment, category
 
 
-def get_news(symbol: str, market: str | None = None, limit: int = 10) -> list[dict]:
-    try: items = yf.Ticker(yahoo_symbol(symbol, market)).news or []
+def get_news(symbol: str, market: str | None = None, limit: int = 10, force_refresh: bool = False) -> list[dict]:
+    ys = yahoo_symbol(symbol, market)
+    key = f"yf:v6:news:{ys}:{limit}"
+    if not force_refresh:
+        cached = get_json(key)
+        if isinstance(cached, list):
+            return cached
+    try: items = yf.Ticker(ys).news or []
     except Exception: items = []
     results = []
     for item in items[:limit]:
@@ -53,4 +61,5 @@ def get_news(symbol: str, market: str | None = None, limit: int = 10) -> list[di
         if title:
             importance, sentiment, category = _classify(f"{title} {summary or ''}")
             results.append({"headline":title,"publisher":publisher,"published_at":publish_time,"summary":summary,"url":url,"importance":importance,"sentiment":sentiment,"category":category})
+    set_json(key, results, ttl=settings.news_cache_ttl_seconds)
     return results

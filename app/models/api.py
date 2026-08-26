@@ -15,6 +15,7 @@ class StockScreenRequest(BaseModel):
     min_overall_score: float = Field(default=0, ge=0, le=100)
     min_technical_score: float = Field(default=0, ge=0, le=100)
     trend_bias: Literal["ANY", "BULLISH", "NEUTRAL", "BEARISH"] = "ANY"
+    trend_horizon: Literal["1D", "1W", "1M", "3M", "6M", "1Y"] = "1M"
     min_market_cap: float | None = Field(default=None, ge=0)
     max_pe: float | None = Field(default=None, gt=0)
     min_roe_pct: float | None = None

@@ -1,9 +1,8 @@
 import math
 import numpy as np
 import pandas as pd
-import yfinance as yf
-
-from app.tools.market_data import yahoo_symbol
+from app.tools.data_provider import get_history_df
+from app.tools.technical import backtest_candlestick_patterns
 
 
 def _rsi(series: pd.Series, period: int = 14) -> pd.Series:
@@ -45,7 +44,7 @@ def _json_safe(value):
 
 
 def backtest_stock_strategy(symbol: str, market: str = "IN", period: str = "5y") -> dict:
-    hist = yf.Ticker(yahoo_symbol(symbol, market)).history(period=period, auto_adjust=True)
+    hist = get_history_df(symbol, market, period=period, interval="1d", auto_adjust=True)
 
     if hist.empty or "Close" not in hist.columns:
         raise ValueError(f"No usable price history returned for {symbol}")
@@ -98,7 +97,7 @@ def backtest_stock_strategy(symbol: str, market: str = "IN", period: str = "5y")
             last = int(i)
 
     horizon_stats: dict[str, dict] = {}
-    for horizon in (5, 10, 20):
+    for horizon in (1, 5, 10, 20):
         returns: list[float] = []
         adverse: list[float] = []
 
@@ -146,13 +145,20 @@ def backtest_stock_strategy(symbol: str, market: str = "IN", period: str = "5y")
     if first_close is not None and last_close is not None and first_close > 0:
         buy_hold = _finite((last_close / first_close - 1) * 100, 2)
 
+    pattern_stats = {}
+    if all(col in hist.columns for col in ("Open", "High", "Low", "Close")):
+        try:
+            pattern_stats = backtest_candlestick_patterns(hist, horizon=5)
+        except Exception:
+            pattern_stats = {}
+
     result = {
         "symbol": symbol.upper(),
         "market": market.upper(),
         "period": period,
         "usable_sessions": int(len(close)),
         "strategy": {
-            "name": "V5 technical confluence long signal",
+            "name": "V6 technical confluence long signal",
             "rules": [
                 "Close > SMA200",
                 "SMA50 > SMA200",
@@ -164,6 +170,7 @@ def backtest_stock_strategy(symbol: str, market: str = "IN", period: str = "5y")
         },
         "signal_count": int(len(signal_positions)),
         "horizons": horizon_stats,
+        "candlestick_pattern_stats": pattern_stats,
         "buy_and_hold_return_pct": buy_hold,
         "note": (
             "Historical in-sample research only. No fees, tax, slippage or "

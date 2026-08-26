@@ -23,6 +23,7 @@ def test_fund_metrics_exist():
     history = synthetic_history()
     returns = calculate_returns(history)
     risk = calculate_risk_metrics(history)
+    assert "1D" in returns
     assert "1Y" in returns
     assert "3Y" in returns
     assert "annualized_volatility_pct" in risk

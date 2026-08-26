@@ -1,21 +1,21 @@
 import math
 from collections import defaultdict
-from functools import lru_cache
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
-import yfinance as yf
 
-from app.tools.market_data import yahoo_symbol
+from app.tools.data_provider import get_benchmark_close, get_history_df, sanitize_ohlcv_frame
 
 
 _TIMEFRAME_CONFIG = {
-    "1W": {"sessions": 5, "return_threshold": 1.2, "fast_ma": 5, "slow_ma": 20},
-    "1M": {"sessions": 21, "return_threshold": 3.0, "fast_ma": 20, "slow_ma": 50},
-    "3M": {"sessions": 63, "return_threshold": 6.0, "fast_ma": 20, "slow_ma": 50},
-    "6M": {"sessions": 126, "return_threshold": 10.0, "fast_ma": 50, "slow_ma": 100},
-    "1Y": {"sessions": 252, "return_threshold": 15.0, "fast_ma": 50, "slow_ma": 200},
+    "1D": {"sessions": 1, "level_sessions": 2, "return_threshold": 0.6, "fast_ma": 3, "slow_ma": 5},
+    "1W": {"sessions": 5, "level_sessions": 5, "return_threshold": 1.2, "fast_ma": 5, "slow_ma": 20},
+    "1M": {"sessions": 21, "level_sessions": 21, "return_threshold": 3.0, "fast_ma": 20, "slow_ma": 50},
+    "3M": {"sessions": 63, "level_sessions": 63, "return_threshold": 6.0, "fast_ma": 20, "slow_ma": 50},
+    "6M": {"sessions": 126, "level_sessions": 126, "return_threshold": 10.0, "fast_ma": 50, "slow_ma": 100},
+    "1Y": {"sessions": 252, "level_sessions": 252, "return_threshold": 15.0, "fast_ma": 50, "slow_ma": 200},
 }
 
 _BENCHMARKS = {
@@ -211,15 +211,67 @@ def backtest_candlestick_patterns(hist: pd.DataFrame, horizon: int = 5, current_
     return stats
 
 
+def _latest_intraday_session(hist: pd.DataFrame, market: str) -> pd.DataFrame:
+    """Return the most recent well-populated exchange-local trading session."""
+    hist = sanitize_ohlcv_frame(hist)
+    if hist.empty:
+        return hist
+    idx = pd.DatetimeIndex(hist.index)
+    tz_name = "Asia/Kolkata" if (market or "IN").upper() == "IN" else "America/New_York"
+    try:
+        if idx.tz is None:
+            idx = idx.tz_localize("UTC")
+        local_idx = idx.tz_convert(ZoneInfo(tz_name))
+    except Exception:
+        local_idx = idx
+    work = hist.copy()
+    work.index = local_idx
+    dates = pd.Series(local_idx.date, index=local_idx)
+    # Prefer the latest session with enough 5-minute bars.  If a provider gives
+    # only a partial live session, keep it when it still has useful granularity.
+    grouped = []
+    for day in sorted(set(dates), reverse=True):
+        part = work[dates.values == day]
+        if not part.empty:
+            grouped.append(part)
+    for part in grouped:
+        if len(part) >= 8:
+            return part
+    return grouped[0] if grouped else work
+
+
 def get_ohlcv_history(symbol: str, market: str | None = None, period: str = "6mo", interval: str = "1d") -> list[dict]:
-    hist = yf.Ticker(yahoo_symbol(symbol, market)).history(period=period, interval=interval, auto_adjust=False)
-    if hist.empty: return []
+    resolved_market = (market or "IN").upper()
+    daily_sessions = {"5d": 5, "1mo": 22, "3mo": 66, "6mo": 132, "1y": 270}
+    if period == "1d":
+        # Pull several days and isolate the latest real trading session.  Yahoo
+        # occasionally returns an incomplete/odd 1d payload; a 5d window is much
+        # more reliable for constructing a full intraday candle chart.
+        requested_interval = interval if interval != "1d" else "5m"
+        hist = get_history_df(symbol, resolved_market, period="5d", interval=requested_interval, auto_adjust=False)
+        hist = _latest_intraday_session(hist, resolved_market)
+        interval = requested_interval
+    elif interval == "1d" and period in daily_sessions:
+        hist = get_history_df(symbol, resolved_market, period="1y", interval="1d", auto_adjust=False)
+        hist = sanitize_ohlcv_frame(hist).tail(daily_sessions[period])
+    else:
+        hist = sanitize_ohlcv_frame(get_history_df(symbol, resolved_market, period=period, interval=interval, auto_adjust=False))
+    if hist.empty:
+        return []
+
     rows = []
-    for idx, row in hist.dropna(subset=["Open", "High", "Low", "Close"]).iterrows():
+    intraday = interval != "1d"
+    clean = sanitize_ohlcv_frame(hist)
+    for idx, row in clean.iterrows():
+        volume = _clean(row.get("Volume", 0)) or 0
+        ts = pd.Timestamp(idx)
         rows.append({
-            "date": idx.strftime("%Y-%m-%d"), "open": round(float(row["Open"]), 4),
-            "high": round(float(row["High"]), 4), "low": round(float(row["Low"]), 4),
-            "close": round(float(row["Close"]), 4), "volume": int(row.get("Volume", 0) or 0),
+            "date": ts.isoformat() if intraday else ts.strftime("%Y-%m-%d"),
+            "open": round(float(row["Open"]), 4),
+            "high": round(float(row["High"]), 4),
+            "low": round(float(row["Low"]), 4),
+            "close": round(float(row["Close"]), 4),
+            "volume": int(volume),
         })
     return rows
 
@@ -248,10 +300,10 @@ def _cluster_price_zones(values: list[tuple[float, int]], latest: float, toleran
 
 
 def _support_resistance_zones(hist: pd.DataFrame, sessions: int, atr_value: float | None) -> dict:
-    data = hist.tail(max(5, sessions)).dropna(subset=["High", "Low", "Close"])
+    data = hist.tail(max(2, sessions)).dropna(subset=["High", "Low", "Close"])
     if data.empty: return {"support_zones": [], "resistance_zones": []}
     latest = float(data["Close"].iloc[-1])
-    pivot_window = 2 if len(data) < 30 else 3
+    pivot_window = 1 if len(data) < 6 else 2 if len(data) < 30 else 3
     lows, highs = [], []
     for i in range(pivot_window, len(data) - pivot_window):
         low = float(data["Low"].iloc[i]); high = float(data["High"].iloc[i])
@@ -311,26 +363,28 @@ def _volume_analysis(hist: pd.DataFrame) -> dict:
     return {"current_volume": int(current), "average_volume_20d": round(avg20), "relative_volume": round(rel, 2) if rel else None, "participation": status}
 
 
-@lru_cache(maxsize=4)
 def _benchmark_history(market: str) -> pd.Series:
-    bench = _BENCHMARKS.get((market or "IN").upper(), _BENCHMARKS["IN"])
-    try:
-        return yf.Ticker(bench["symbol"]).history(period="1y", auto_adjust=True)["Close"].dropna()
-    except Exception:
-        return pd.Series(dtype=float)
+    return get_benchmark_close((market or "IN").upper())
 
 
-def _relative_strength(close: pd.Series, market: str) -> dict:
+def _relative_strength(close: pd.Series, market: str, benchmark_close: pd.Series | None = None) -> dict:
     bench = _BENCHMARKS.get((market or "IN").upper(), _BENCHMARKS["IN"])
-    bh = _benchmark_history((market or "IN").upper())
+    bh = benchmark_close if benchmark_close is not None else _benchmark_history((market or "IN").upper())
     result = {"benchmark_symbol": bench["symbol"], "benchmark_name": bench["name"], "horizons": {}}
-    if bh.empty: return result
+    if bh is None or bh.empty:
+        return result
+    bh = bh.dropna()
     for label, cfg in _TIMEFRAME_CONFIG.items():
         n = min(cfg["sessions"], len(close)-1, len(bh)-1)
-        if n <= 0: continue
+        if n <= 0:
+            continue
         sr = (float(close.iloc[-1]) / float(close.iloc[-n-1]) - 1) * 100
         br = (float(bh.iloc[-1]) / float(bh.iloc[-n-1]) - 1) * 100
-        result["horizons"][label] = {"stock_return_pct": round(sr,2), "benchmark_return_pct": round(br,2), "relative_strength_pct": round(sr-br,2), "status": "OUTPERFORMING" if sr-br > 1 else "UNDERPERFORMING" if sr-br < -1 else "IN LINE"}
+        result["horizons"][label] = {
+            "stock_return_pct": round(sr,2), "benchmark_return_pct": round(br,2),
+            "relative_strength_pct": round(sr-br,2),
+            "status": "OUTPERFORMING" if sr-br > 1 else "UNDERPERFORMING" if sr-br < -1 else "IN LINE",
+        }
     return result
 
 
@@ -362,7 +416,7 @@ def _timeframe_bias(close: pd.Series, technical: dict, patterns: list[dict], lab
     if volume.get("relative_volume") is not None and volume["relative_volume"] >= 1.25:
         score += .25 if horizon_return >= 0 else -.25
         reasons.append(f"Volume participation is elevated ({volume['relative_volume']:.2f}× 20D average).")
-    if label in {"1W", "1M"}:
+    if label in {"1D", "1W", "1M"}:
         for pattern in patterns[:3]:
             weight = min(.55, float(pattern.get("strength", 1)) * .18)
             if pattern.get("bias") == "BULLISH": score += weight
@@ -376,9 +430,13 @@ def _multi_horizon_outlook(close: pd.Series, technical: dict, patterns: list[dic
     if hist is None:
         hist = pd.DataFrame({"High": close, "Low": close, "Close": close}, index=close.index)
     out = {}
+    latest = float(close.dropna().iloc[-1])
+    volume = technical.get("volume", {})
     for label, cfg in _TIMEFRAME_CONFIG.items():
         item = _timeframe_bias(close, technical, patterns, label, cfg)
-        item["levels"] = _support_resistance_zones(hist, cfg["sessions"], atr_value)
+        item["levels"] = _support_resistance_zones(hist, int(cfg.get("level_sessions", cfg["sessions"])), atr_value)
+        item["breakout"] = _breakout_status(latest, item["levels"], volume, atr_value)
+        item["risk_reward"] = _risk_reward(latest, item["directional_bias"], item["levels"], atr_value)
         out[label] = item
     return out
 
@@ -435,15 +493,21 @@ def _risk_reward(price: float, bias: str, levels: dict, atr_value: float | None)
 
 def _directional_outlook(technical: dict, patterns: list[dict], close: pd.Series) -> dict:
     timelines = technical.get("timeline_biases", {})
-    short = timelines.get("1M") or timelines.get("1W") or {}
-    return {"directional_bias": short.get("directional_bias", "NEUTRAL"), "horizon": "1 month reference", "confidence_pct": short.get("signal_agreement_pct", 0), "signal_agreement_pct": short.get("signal_agreement_pct", 0), "reasons": short.get("reasons", []), "note": "Compatibility field. Prefer timeline_biases in V5."}
+    short = timelines.get("1D") or timelines.get("1W") or timelines.get("1M") or {}
+    return {"directional_bias": short.get("directional_bias", "NEUTRAL"), "horizon": "1 trading day reference", "confidence_pct": short.get("signal_agreement_pct", 0), "signal_agreement_pct": short.get("signal_agreement_pct", 0), "reasons": short.get("reasons", []), "note": "Compatibility field. Prefer timeline_biases in V6."}
 
 
-def get_technical(symbol: str, market: str | None = None, include_pattern_backtest: bool = True) -> dict:
+def get_technical(
+    symbol: str,
+    market: str | None = None,
+    include_pattern_backtest: bool = False,
+    hist: pd.DataFrame | None = None,
+    benchmark_close: pd.Series | None = None,
+) -> dict:
     resolved_market = (market or "IN").upper()
-    ticker = yf.Ticker(yahoo_symbol(symbol, resolved_market))
-    hist = ticker.history(period="1y", auto_adjust=False)
-    if hist.empty or len(hist) < 50:
+    if hist is None:
+        hist = get_history_df(symbol, resolved_market, period="1y", auto_adjust=False)
+    if hist is None or hist.empty or len(hist) < 50:
         raise ValueError(f"Insufficient technical data for {symbol}")
     data = hist.dropna(subset=["High", "Low", "Close"]).copy()
     close = data["Close"].astype(float)
@@ -463,22 +527,28 @@ def get_technical(symbol: str, market: str | None = None, include_pattern_backte
         "volume": volume,
     }
     regime = _market_regime(data, base["adx14"], base["atr_pct"]); base["market_regime"] = regime
-    raw_hist = ticker.history(period="5y", auto_adjust=False) if include_pattern_backtest else data
+
+    # Current candle patterns only need the already-fetched daily history. The
+    # expensive 5Y pattern backtest is lazy/optional in V6.
+    raw_hist = get_history_df(symbol, resolved_market, period="5y", auto_adjust=False) if include_pattern_backtest else data
     patterns = detect_candlestick_patterns(raw_hist.tail(140))
     current_simple_regime = "UPTREND" if "UP" in regime["regime"] else "DOWNTREND" if "DOWN" in regime["regime"] else "RANGE"
     pattern_stats = backtest_candlestick_patterns(raw_hist, horizon=5, current_regime=current_simple_regime) if include_pattern_backtest else {}
     for pattern in patterns:
-        if pattern["pattern"] in pattern_stats: pattern["historical_5d"] = pattern_stats[pattern["pattern"]]
+        if pattern["pattern"] in pattern_stats:
+            pattern["historical_5d"] = pattern_stats[pattern["pattern"]]
     base["candlestick_patterns"] = patterns; base["pattern_backtest"] = pattern_stats
+
     timelines = _multi_horizon_outlook(close, base, patterns, data, atr_value); base["timeline_biases"] = timelines
     base["trend_alignment"] = _trend_alignment(timelines)
-    # Backward-compatible 20D fields plus richer horizon levels.
     levels_1m = timelines["1M"]["levels"]
     base["support_20d"] = levels_1m.get("nearest_support", {}).get("center") if levels_1m.get("nearest_support") else round(float(data["Low"].tail(20).min()),4)
     base["resistance_20d"] = levels_1m.get("nearest_resistance", {}).get("center") if levels_1m.get("nearest_resistance") else round(float(data["High"].tail(20).max()),4)
     base["important_levels"] = levels_1m
-    base["breakout"] = _breakout_status(latest, levels_1m, volume, atr_value)
-    base["risk_reward"] = _risk_reward(latest, timelines["1M"]["directional_bias"], levels_1m, atr_value)
-    base["relative_strength"] = _relative_strength(close, resolved_market)
+    base["breakout"] = timelines["1M"]["breakout"]
+    base["risk_reward"] = timelines["1M"]["risk_reward"]
+    base["relative_strength"] = _relative_strength(close, resolved_market, benchmark_close=benchmark_close)
     base["trend_outlook"] = _directional_outlook(base, patterns, close)
+    base["performance_note"] = "V7 technicals reuse validated/sanitized cached OHLC; 5Y backtests load only on demand. The 1D horizon participates in multi-timeframe analysis."
     return base
+

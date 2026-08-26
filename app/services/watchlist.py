@@ -22,7 +22,9 @@ def check_watchlist(request: WatchlistRequest) -> dict:
             for event in events.get("events", []):
                 if event.get("days_until") is not None and 0 <= event["days_until"] <= 7:
                     alerts.append({"type":"EVENT","severity":event.get("impact","MEDIUM"),"message":f"{event['title']} in {event['days_until']} day(s)."})
-            results.append({"symbol":item.symbol.upper(),"market":item.market,"price":tech.get("price"),"bias":tech.get("timeline_biases",{}).get("1M",{}).get("directional_bias"),"signal_agreement_pct":tech.get("timeline_biases",{}).get("1M",{}).get("signal_agreement_pct"),"alerts":alerts})
+            one_day = tech.get("timeline_biases",{}).get("1D",{})
+            one_month = tech.get("timeline_biases",{}).get("1M",{})
+            results.append({"symbol":item.symbol.upper(),"market":item.market,"price":tech.get("price"),"bias":one_day.get("directional_bias"),"signal_agreement_pct":one_day.get("signal_agreement_pct"),"bias_1d":one_day.get("directional_bias"),"signal_1d":one_day.get("signal_agreement_pct"),"bias_1m":one_month.get("directional_bias"),"signal_1m":one_month.get("signal_agreement_pct"),"alerts":alerts})
         except Exception as exc:
             errors.append({"symbol":item.symbol,"error":str(exc)})
     return {"items":results,"errors":errors,"triggered_count":sum(len(x["alerts"]) for x in results)}

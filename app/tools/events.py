@@ -2,6 +2,9 @@ from datetime import datetime, timezone
 import pandas as pd
 import yfinance as yf
 
+from app.cache.redis_cache import get_json, set_json
+from app.config import settings
+from app.tools.data_provider import get_info
 from app.tools.market_data import yahoo_symbol
 
 
@@ -29,12 +32,18 @@ def _days_until(value):
         return None
 
 
-def get_corporate_events(symbol: str, market: str | None = None) -> dict:
+def get_corporate_events(symbol: str, market: str | None = None, force_refresh: bool = False) -> dict:
     """Best-effort upcoming company-event awareness from Yahoo Finance.
 
     Availability varies by ticker. This intentionally reports missing data rather than inventing events.
     """
-    ticker = yf.Ticker(yahoo_symbol(symbol, market))
+    ys = yahoo_symbol(symbol, market)
+    key = f"yf:v6:events:{ys}"
+    if not force_refresh:
+        cached = get_json(key)
+        if isinstance(cached, dict) and "events" in cached:
+            return cached
+    ticker = yf.Ticker(ys)
     items = []
     try:
         cal = ticker.calendar
@@ -58,7 +67,7 @@ def get_corporate_events(symbol: str, market: str | None = None) -> dict:
         pass
 
     try:
-        info = ticker.info or {}
+        info = get_info(symbol, market, force_refresh=force_refresh)
         exdiv = info.get("exDividendDate")
         if exdiv and not any(x["type"] == "DIVIDEND" for x in items):
             days = _days_until(exdiv)
@@ -69,8 +78,10 @@ def get_corporate_events(symbol: str, market: str | None = None) -> dict:
 
     items.sort(key=lambda x: (99999 if x.get("days_until") is None else x["days_until"]))
     upcoming = [x for x in items if x.get("days_until") is None or x["days_until"] <= 30]
-    return {
+    result = {
         "events": upcoming,
         "high_impact_soon": any(x.get("impact") == "HIGH" and x.get("days_until") is not None and 0 <= x["days_until"] <= 7 for x in upcoming),
         "note": "Company-event availability depends on the data provider. Macro events such as RBI/Fed meetings are not fabricated when no calendar feed is configured.",
     }
+    set_json(key, result, ttl=settings.events_cache_ttl_seconds)
+    return result

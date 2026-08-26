@@ -5,7 +5,7 @@ from cachetools import TTLCache, cached
 _search_cache = TTLCache(maxsize=200, ttl=3600)
 _mfapi_cache = TTLCache(maxsize=500, ttl=3600)
 
-_HEADERS = {"User-Agent": "Mozilla/5.0 StockAIAgent/3.0"}
+_HEADERS = {"User-Agent": "Mozilla/5.0 StockAIAgent/7.0"}
 
 
 @cached(_search_cache)
