@@ -1,170 +1,193 @@
-# Stock AI Agent V7
+# Stock AI Agent V8.2
 
-V7 builds on the V6.1 data-integrity and SciPy hotfix release. It keeps the India/US Stocks, Funds, Screener, Portfolio, Watchlist, validated quote layer, sanitized OHLC, progressive loading and NVIDIA Nemotron integration, and adds three major workflows:
+V8.2 is a non-breaking UX/feature upgrade on top of V8.1 and V7. It keeps the V7 Stocks, Funds, Screener, Portfolio, Watchlist, 1D–1Y technical outlook, V6/V6.1 data-integrity fixes, progressive loading and NVIDIA Nemotron integration, while redesigning the UI into a research-terminal layout and adding Market, Intraday, IPO and research-validation workflows.
 
-1. a much deeper Mutual Funds / ETF research dashboard,
-2. clickable screener results that open the full matching Stock or Fund analysis,
-3. a selected-horizon Technical AI Decision with BUY / HOLD / SELL research output plus deterministic target and risk-control levels.
-
-## V7 Stock technical decision
-
-The Multi-Timeframe Technical Outlook includes clickable:
-
-- 1D
-- 1W
-- 1M
-- 3M
-- 6M
-- 1Y
-
-Selecting a horizon refreshes its support/resistance zones, relative strength, breakout context and a separate Nemotron technical-decision request.
-
-The decision considers all six technical horizons plus:
-
-- RSI
-- MACD
-- SMA/trend structure
-- VWAP
-- ATR
-- ADX
-- relative volume
-- breakout/breakdown state
-- dynamic support/resistance zones
-- relative strength vs NIFTY 50 or S&P 500
-- recent candlestick patterns
-
-The UI displays:
-
-- **BUY / HOLD / SELL** technical action
-- deterministic technical score
-- AI confidence
-- entry reference
-- technical target zone
-- stop / risk-control reference
-- invalidation level
-- potential reward/risk
-- risk/reward ratio
-- confirming and conflicting signals
-
-### Important target/stop design
-
-Nemotron is **not allowed to invent target or stop prices**. Numeric levels are calculated deterministically from the selected horizon's price structure, support/resistance zones and ATR. If the deterministic rules and AI directional suggestion disagree, V7 deliberately downgrades the final action to **HOLD**.
-
-Targets are technical estimates, not confirmed future prices. Risk-control levels are research references, not personalized stop-loss instructions.
-
-## V7 Mutual Funds / ETFs dashboard
-
-Funds now have a detail experience much closer to Stocks, while using fund-specific metrics instead of stock indicators.
-
-### Header and data quality
-
-- fund/scheme name
-- category
-- fund house
-- latest NAV/price and date
-- NAV provider
-- benchmark provider
-- observation coverage
-- timezone/date-alignment status
-
-### Multi-horizon returns
-
-- 1D
-- 1M
-- 3M
-- 6M
-- 1Y
-- 3Y CAGR
-- 5Y CAGR
-
-The return cards are clickable and show the selected historical return context.
-
-### Risk / consistency
-
-- annualized volatility
-- downside volatility
-- maximum drawdown
-- current drawdown from peak
-- Sharpe ratio
-- Sortino ratio
-- positive rolling 1Y periods
-- positive calendar years
-- risk band
-- consistency status
-
-### Benchmark analytics
-
-- benchmark name
-- fund CAGR over aligned history
-- benchmark CAGR
-- alpha
-- tracking error
-- correlation
-- beta
-- aligned sessions
-- normalized fund-vs-benchmark growth chart (both rebased to 100)
-
-### Fund profile
-
-- overall fund score / rating
-- return score
-- consistency score
-- risk score
-- cost score
-- benchmark score
-- drawdown score
-- cost status
-- benchmark status
-- rolling 1Y median / best / worst returns
-- research notes explaining important metrics
-
-## Clickable Screener results
-
-Every returned Stock or Fund row is now clickable and keyboard-accessible.
-
-- Click a **Stock** result → V7 switches to Stocks, fills market/symbol, and loads the full stock research page.
-- Click a **Fund** result → V7 switches to Funds and loads the full fund research page.
-
-The screener remains optimized for bulk work: AI is still skipped while screening and only runs after opening a detailed stock result.
-
-## V6 / V6.1 data-integrity features retained
+## V8 workspaces
 
 ### Stocks
 
-- India live quote validation: NSE + Yahoo when reachable
-- US quote validation: Yahoo + Stooq sanity check when reachable
-- Yahoo/yfinance historical OHLCV with repair support
-- duplicate/non-finite/impossible OHLC rejection
-- 1D 5-minute latest-populated-session extraction
-- quote source, timestamp and discrepancy display
+- India + US equities
+- validated/current quote separated from historical OHLC
+- 1D / 1W / 1M / 3M / 6M / 1Y technical horizons
+- line/candlestick chart
+- RSI, MACD, SMA, VWAP, ATR, ADX, relative volume
+- dynamic support/resistance zones
+- breakout/breakdown status
+- relative strength vs NIFTY 50 / S&P 500
+- candlestick-pattern history
+- BUY / HOLD / SELL technical research decision
+- deterministic target zone, risk-control and invalidation references
+- Nemotron stock synthesis
+- peer comparison
+- stock/sector/market relative performance
+- multi-year revenue / earnings / FCF / debt trend table
+- transparent Bear / Base / Bull valuation scenarios
+- best-effort ownership snapshot with source caveats
+- recommendation track record
+- ordinary in-sample backtest
+- expanding-window walk-forward validation
+- custom transparent Strategy Builder
+- JSON research-snapshot export
 
-### Indian Mutual Funds
+### Market
 
-- MFAPI NAV/search
-- NIFTY 50 benchmark via Yahoo Finance
-- timezone-naive calendar-date normalization before joining NAV and benchmark series
+A dedicated market-context workspace shows:
 
-### US Funds / ETFs
+- India / US market regime
+- breadth above SMA20 / SMA50 / SMA200
+- NIFTY/S&P and configured sector/index proxies
+- 1M and 3M momentum context
 
-- Yahoo Finance/yfinance
-- S&P 500 benchmark
+This is intentionally contextual. It does not claim that market breadth alone predicts the next move.
 
-## NVIDIA model
+### Intraday
+
+Dedicated stock intraday workspace:
+
+- 1m / 5m / 15m / 30m / 60m bars
+- exchange-session filtering
+- VWAP
+- EMA9 / EMA21
+- RSI
+- MACD
+- opening-range high/low
+- session high/low
+- deterministic BUY / HOLD / SELL research classification
+- technical target and risk-control reference
+- optional asynchronous Nemotron interpretation
+
+Intraday output is time-sensitive and is not an order or guaranteed price forecast.
+
+### Funds / ETFs
+
+V7's richer fund experience is retained:
+
+- Indian mutual funds via MFAPI
+- US mutual funds / ETFs via Yahoo Finance
+- 1D, 1M, 3M, 6M, 1Y, 3Y and 5Y performance
+- NAV/price history
+- benchmark-normalized growth chart
+- Sharpe / Sortino
+- volatility / downside volatility
+- maximum/current drawdown
+- rolling-return consistency
+- alpha, beta, correlation and tracking error
+- expense ratio / AUM when available
+- fund score breakdown
+- US top-holdings overlap when the provider exposes holdings
+- explicit limitation for Indian fund overlap when holdings data is unavailable
+
+### Screener
+
+- India / US stock and fund screeners
+- scan-count and result-count controls remain separate
+- stock fundamental + technical filters
+- fund return / risk / drawdown / expense filters
+- rows are clickable
+- clicking a stock opens the full Stocks analysis
+- clicking a fund opens the full Funds analysis
+- AI is intentionally skipped during bulk screening
+
+### IPO Research
+
+Pre-listing research for India and the US.
+
+India sources:
+
+- NSE current/upcoming issue web feeds when reachable
+- SEBI Public Issues filings
+- if the undocumented NSE web API is blocked, recent SEBI filings remain visible as low-completeness research candidates
+
+US source:
+
+- Nasdaq IPO calendar data
+
+The IPO desk produces a conservative **SUBSCRIBE / WATCH / AVOID** research classification rather than a guaranteed “buy before listing” call. Thin evidence caps aggressiveness. The project intentionally does **not** use grey-market premium/GMP as verified evidence.
+
+For each selected issue, V8 shows available issue dates, price-band/demand evidence, source links, evidence completeness, positives, risks, due diligence and the Nemotron pre-listing view.
+
+### Portfolio
+
+- India + US stocks/funds
+- INR / USD base currency
+- P&L and weights
+- historical volatility
+- historical daily VaR 95%
+- max drawdown
+- sector concentration
+- highest pair correlations
+- local-only Paper Trade Journal for simulated ideas; it never sends orders
+
+### Watchlist
+
+V7 watchlist behavior is retained and extended through the existing backend checks:
+
+- RSI thresholds
+- price-above / price-below triggers
+- unusual relative volume
+- breakout / breakdown state
+- near-term company-event awareness
+
+### V8 Assistant
+
+A contextual help chatbot is available from every workspace. It can explain indicators, app features and the currently selected Stock, Fund, Intraday setup or IPO when that context is available.
+
+It is an educational/research assistant, not a personalized financial adviser.
+
+## Recommendation validation
+
+V8 records technical research calls in PostgreSQL when the technical-decision endpoint is used. The dashboard can later audit those calls against subsequent price history and distinguish:
+
+- target reached
+- risk level breached
+- still tracking
+- current mark-to-market directional outcome
+
+The walk-forward lab separately holds out future historical blocks after configuration selection on prior data. This reduces, but does not eliminate, overfitting risk.
+
+## Data sources and integrity
+
+This remains a research prototype using public/free sources.
+
+### Stocks
+
+- Yahoo Finance/yfinance: historical OHLCV, financial statements, fundamentals, news and events
+- India quote validation: NSE India + Yahoo when reachable
+- US quote validation: Yahoo + Stooq comparison when reachable
+- NIFTY 50 / S&P 500 and sector/index proxies for relative context
+
+### Indian mutual funds
+
+- MFAPI for schemes and NAV history
+- benchmark history from Yahoo Finance
+- V6 timezone-normalization fix remains enabled
+
+### IPOs
+
+- India: NSE public web feeds + SEBI Public Issues filings
+- US: Nasdaq IPO calendar
+
+Public/free providers may be delayed, blocked, rate-limited, incomplete or structurally changed. For production trading, replace them with licensed exchange-grade market, fund, corporate-action, filing, IPO-calendar and news feeds.
+
+## AI model
+
+The project uses NVIDIA's OpenAI-compatible endpoint with:
 
 ```text
 nvidia/nemotron-3.5-lightning-30b-a3b
 ```
 
-via NVIDIA's OpenAI-compatible endpoint.
+Numerical technical target/risk levels are calculated deterministically by Python. The LLM is used for synthesis and explanation and is instructed not to invent missing financial values or guaranteed outcomes.
 
 ## Run locally
 
 ```bash
 cp .env.example .env
-# Set NVIDIA_API_KEY in .env
+# set NVIDIA_API_KEY in .env
 
 docker compose down
-docker compose up --build
+docker compose build --no-cache api
+docker compose up
 ```
 
 Open:
@@ -173,34 +196,46 @@ Open:
 - Swagger: `http://localhost:8000/docs`
 - Health: `http://localhost:8000/health`
 
-Health should report:
+Expected health version:
 
 ```json
-{
-  "status": "ok",
-  "version": "7.0.0"
-}
+{"status":"ok","version":"8.2.0"}
 ```
 
-## Useful API examples
+## Useful API calls
 
 ```bash
-# India stock
+# Stock core
 curl "http://localhost:8000/analyze/core/TCS?market=IN"
 
-# 1D technical AI decision
+# Technical AI decision
 curl "http://localhost:8000/technical/decision/TCS?market=IN&horizon=1D"
 
-# 3M technical AI decision
-curl "http://localhost:8000/technical/decision/TCS?market=IN&horizon=3M"
+# Intraday
+curl "http://localhost:8000/intraday/TCS?market=IN&interval=5m"
+
+# Market breadth
+curl "http://localhost:8000/market/overview?market=IN"
+
+# Research intelligence
+curl "http://localhost:8000/research/TCS?market=IN"
+
+# Walk-forward validation
+curl "http://localhost:8000/backtest/walk-forward/TCS?market=IN&period=10y"
+
+# IPO list
+curl "http://localhost:8000/ipo/list?market=IN"
 
 # Indian mutual fund
 curl "http://localhost:8000/mf/analyze/120503?market=IN"
-
-# 1D candles
-curl "http://localhost:8000/api/candles/TCS?market=IN&period=1d&interval=5m"
 ```
 
-## Limitations
+## Important limitations
 
-This is a research/education application, not an exchange terminal or personalized investment adviser. Public/free providers can be delayed, unavailable, rate-limited or inconsistent. Cross-source validation reduces silent errors but does not create exchange-grade data. For production trading, use licensed real-time market, corporate-action, fund and news feeds.
+- No analysis can provide a confirmed future target, guaranteed stop level, listing gain or profit.
+- Intraday signals can become obsolete quickly.
+- DCF scenarios are simplified and assumptions are exposed in the UI.
+- Ownership data is best-effort; Indian promoter/FII/DII patterns should be verified against official exchange/company filings.
+- Macro RBI/Fed dates are not fabricated when no reliable macro-calendar feed is configured.
+- Indian mutual-fund portfolio overlap is not calculated from MFAPI because MFAPI does not provide holdings.
+- The local Docker build intentionally has no login/authentication layer. Add proper authentication, TLS and secrets controls before exposing it to other users or the public internet.

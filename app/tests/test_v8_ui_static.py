@@ -1,0 +1,85 @@
+from pathlib import Path
+from bs4 import BeautifulSoup
+
+ROOT = Path(__file__).resolve().parents[2]
+HTML = (ROOT / "app/static/index.html").read_text(encoding="utf-8")
+JS = (ROOT / "app/static/app.js").read_text(encoding="utf-8")
+CSS = (ROOT / "app/static/styles.css").read_text(encoding="utf-8")
+
+
+def test_v8_major_workspaces_and_chat_exist():
+    for marker in [
+        'data-tab="market"', 'data-tab="intraday"', 'data-tab="ipo"',
+        'id="chat-panel"', 'id="strategy-run"', 'id="paper-journal"',
+        'id="ownership-table"', 'id="stock-export-btn"',
+    ]:
+        assert marker in HTML
+
+
+def test_v8_no_duplicate_dom_ids():
+    soup = BeautifulSoup(HTML, "html.parser")
+    ids = [node.get("id") for node in soup.find_all(id=True)]
+    duplicates = sorted({x for x in ids if ids.count(x) > 1})
+    assert duplicates == []
+
+
+def test_v8_screener_navigation_and_1d_preserved():
+    assert "activateTab('stocks')" in JS
+    assert "activateTab('mutual-funds')" in JS
+    assert "order=['1D','1W','1M','3M','6M','1Y']" in JS
+    assert "runIntraday" in JS
+    assert "loadIPOList" in JS
+
+
+def test_v8_redesign_has_readability_components():
+    css = (ROOT / "app/static/styles.css").read_text(encoding="utf-8")
+    for marker in ["V8 Research Terminal", ".app-header", ".workspace-banner", ".chat-panel", ".market-index-grid"]:
+        assert marker in css
+
+
+def test_v82_support_resistance_table_is_contained():
+    css = (ROOT / "app/static/styles.css").read_text(encoding="utf-8")
+    assert ".two-panel-grid>.glass-panel{min-width:0}" in css
+    assert ".support-resistance-layout>*{min-width:0}" in css
+    assert ".sr-indicators-wrap{min-width:0;max-width:100%;overflow-x:auto}" in css
+    assert ".sr-table{min-width:0;table-layout:fixed}" in css
+
+
+def test_chart_shows_projected_candle_and_ai_trade_levels():
+    assert "next_candle_prediction" in JS
+    assert "Projected next candle" in JS
+    assert "currentTechnicalDecision" in JS
+    assert "AI target" in JS
+    assert "AI stop" in JS
+    assert 'fillcolor:\'rgba(168,85,247,.78)\'' in JS
+    assert '/static/app.js?v=8.2.8' in HTML
+    assert '/static/styles.css?v=8.2.8' in HTML
+    assert "hoverlabel:hoverStyle" in JS
+    assert "hovermode:'x'" in JS
+    assert "#candlestick-chart .hoverlayer text" in CSS
+    assert "bgcolor:'#581c87'" in JS
+    assert "setup.level_source==='ai_selected'" in JS
+
+
+def test_intraday_ai_candle_and_trade_levels_are_rendered_safely():
+    assert 'id="intraday-chart-meta"' in HTML
+    assert "AI projected next candle" in JS
+    assert "ai_next_candle_prediction" in JS
+    assert "ai_level_source" in JS
+    assert ".intraday-chart-card #intraday-chart{height:440px;min-height:440px}" in CSS
+    assert ".intraday-chart-card{min-width:0;height:auto;overflow:hidden}" in CSS
+
+
+def test_final_ai_decision_is_prominent_and_waits_for_all_stock_evidence():
+    for marker in [
+        'id="final-ai-banner"', 'id="final-ai-action"', 'id="final-ai-confidence"',
+        'id="final-ai-summary"', 'id="final-ai-drivers"', 'id="final-ai-risks"',
+    ]:
+        assert marker in HTML
+    assert "maybeLoadFinalAIDecision" in JS
+    assert "'/analyze/final-decision'" in JS
+    assert "next_candle_prediction:projection" in JS
+    assert "technical_decision:currentTechnicalDecision" in JS
+    assert ".final-ai-banner.buy" in CSS
+    assert ".final-ai-banner.sell" in CSS
+    assert ".final-ai-banner.hold" in CSS

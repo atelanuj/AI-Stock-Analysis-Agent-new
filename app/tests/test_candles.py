@@ -4,7 +4,7 @@ import pandas as pd
 
 sys.modules.setdefault("yfinance", types.SimpleNamespace())
 
-from app.tools.technical import detect_candlestick_patterns, _multi_horizon_outlook, _risk_reward
+from app.tools.technical import detect_candlestick_patterns, predict_next_candle, _multi_horizon_outlook, _risk_reward
 
 
 def test_detects_bullish_engulfing():
@@ -43,3 +43,30 @@ def test_risk_reward_has_invalidation_and_ratio():
     assert rr["invalidation_level"] < 100
     assert rr["target_reference"] > 100
     assert rr["risk_reward_ratio"] > 0
+
+
+def test_next_candle_projection_uses_historical_shape_analogs():
+    idx = pd.date_range("2026-01-01", periods=64, freq="B")
+    rows = []
+    previous = 100.0
+    body_pattern = [-0.006, 0.001, 0.009, 0.014]
+    for pos, date in enumerate(idx):
+        open_price = previous * (1 + (0.001 if pos % 4 == 3 else 0))
+        close = open_price * (1 + body_pattern[pos % 4])
+        high = max(open_price, close) * 1.004
+        low = min(open_price, close) * 0.996
+        rows.append({"date": date.strftime("%Y-%m-%d"), "open": open_price, "high": high, "low": low, "close": close, "volume": 1000 + pos})
+        previous = close
+
+    projection = predict_next_candle(rows[:-1], "1d")
+    assert projection is not None
+    assert projection["date"] == rows[-1]["date"]
+    assert projection["analogs_used"] > 0
+    assert projection["low"] <= min(projection["open"], projection["close"])
+    assert projection["high"] >= max(projection["open"], projection["close"])
+    assert 35 <= projection["confidence_pct"] <= 85
+    assert "historical" in projection["note"].lower()
+
+
+def test_next_candle_projection_requires_enough_history():
+    assert predict_next_candle([], "1d") is None

@@ -2,23 +2,31 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stock AI Agent V7</title>
+  <title>Stock AI Agent V8.2</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/styles.css?v=8.2.8">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script>
 </head>
 <body>
 <div class="glass-background"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
 <div class="app-container">
-<header class="glass-panel">
-  <div class="logo"><i class="fa-solid fa-chart-line"></i> Stock AI Agent <span class="badge">V7</span></div>
-  <nav>
-    <button class="nav-btn active" data-tab="stocks">Stocks</button><button class="nav-btn" data-tab="mutual-funds">Funds</button><button class="nav-btn" data-tab="screener">Screener</button><button class="nav-btn" data-tab="portfolio">Portfolio</button><button class="nav-btn" data-tab="watchlist">Watchlist</button>
+<header class="app-header">
+  <div class="brand-block"><div class="logo-mark"><i class="fa-solid fa-chart-line"></i></div><div><div class="logo">Stock AI Agent <span class="badge">V8.2</span></div><small>Research workspace · India + US</small></div></div>
+  <nav class="primary-nav" aria-label="Primary navigation">
+    <button class="nav-btn active" data-tab="stocks"><i class="fa-solid fa-chart-line"></i><span>Stocks</span></button>
+    <button class="nav-btn" data-tab="market"><i class="fa-solid fa-globe"></i><span>Market</span></button>
+    <button class="nav-btn" data-tab="intraday"><i class="fa-solid fa-bolt"></i><span>Intraday</span></button>
+    <button class="nav-btn" data-tab="mutual-funds"><i class="fa-solid fa-chart-pie"></i><span>Funds</span></button>
+    <button class="nav-btn" data-tab="screener"><i class="fa-solid fa-filter"></i><span>Screener</span></button>
+    <button class="nav-btn" data-tab="ipo"><i class="fa-solid fa-rocket"></i><span>IPO</span></button>
+    <button class="nav-btn" data-tab="portfolio"><i class="fa-solid fa-briefcase"></i><span>Portfolio</span></button>
+    <button class="nav-btn" data-tab="watchlist"><i class="fa-regular fa-star"></i><span>Watchlist</span></button>
   </nav>
-  <button id="theme-toggle" class="icon-btn" title="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+  <div class="header-actions"><button id="chat-open" class="icon-btn chat-header-btn" title="Ask V8"><i class="fa-regular fa-comments"></i></button><button id="theme-toggle" class="icon-btn" title="Toggle theme"><i class="fa-solid fa-moon"></i></button></div>
 </header>
+<div class="workspace-banner"><div><span class="eyebrow">V8.2 Research Terminal</span><h1 id="workspace-title">Stocks</h1><p id="workspace-subtitle">Validated market data, technical timing, fundamentals and AI synthesis in one workspace.</p></div><div id="market-pulse-mini" class="market-pulse-mini"><span class="pulse-dot"></span><span>Market context loads with research</span></div></div>
 <main class="content-area">
 
 <section id="tab-stocks" class="tab-pane active fade-in">
@@ -32,7 +40,11 @@
   <div id="stock-results" class="results-container hidden fade-in">
     <div class="stock-header glass-panel">
       <div class="stock-title"><h1 id="stock-name">--</h1><span id="stock-symbol" class="badge">--</span></div>
-      <div class="stock-actions"><button id="stock-watch-btn" class="glass-btn"><i class="fa-regular fa-star"></i> Watch</button><div class="stock-price-block"><h2 id="stock-price">--</h2><span id="stock-market-badge" class="badge variant">--</span></div></div>
+      <div class="stock-actions"><button id="stock-export-btn" class="glass-btn" title="Export current research snapshot"><i class="fa-solid fa-download"></i> Export</button><button id="stock-watch-btn" class="glass-btn"><i class="fa-regular fa-star"></i> Watch</button><div class="stock-price-block"><h2 id="stock-price">--</h2><span id="stock-market-badge" class="badge variant">--</span></div></div>
+    </div>
+    <div id="final-ai-banner" class="glass-panel final-ai-banner pending">
+      <div class="final-ai-verdict"><span class="eyebrow"><i class="fa-solid fa-brain"></i> Final AI Decision</span><strong id="final-ai-action">--</strong><span id="final-ai-confidence" class="badge">Waiting</span></div>
+      <div class="final-ai-copy"><div id="final-ai-state" class="quality-badge checking"><i class="fa-solid fa-circle-notch"></i> Gathering all evidence</div><p id="final-ai-summary">Waiting for fundamentals, technicals, volume, risk, projected candle, target/stop, news and AI synthesis.</p><div class="final-ai-evidence"><div><b>Key drivers</b><span id="final-ai-drivers">--</span></div><div><b>Key risks</b><span id="final-ai-risks">--</span></div></div><small id="final-ai-disclaimer" class="text-muted">Final classification loads after all research sections are ready.</small></div>
     </div>
     <div class="glass-panel data-quality-strip">
       <div class="quality-main"><span id="stock-quality-badge" class="quality-badge checking"><i class="fa-solid fa-shield-halved"></i> Checking sources</span><span id="stock-source-text">Cross-validating quote data…</span></div>
@@ -42,7 +54,7 @@
     <div class="dashboard-grid">
       <div class="main-column">
         <div class="glass-panel chart-container candle-panel">
-          <div class="section-heading chart-heading"><div><h3>Price & Candlestick Analysis</h3><p class="text-muted text-sm">Toggle line/candles and timeframe. Dynamic support/resistance zones follow the selected horizon.</p></div>
+          <div class="section-heading chart-heading"><div><h3>Price & Candlestick Analysis</h3><p class="text-muted text-sm">Toggle line/candles and timeframe. The projected next candle uses historical pattern analogs; AI target and stop levels appear after the Technical Decision loads.</p></div>
             <div class="chart-controls">
               <div id="chart-type-toggle" class="segmented-control"><button type="button" class="segment-btn active" data-chart-type="candlestick">Candles</button><button type="button" class="segment-btn" data-chart-type="line">Line</button></div>
               <div id="chart-period-toggle" class="segmented-control timeframe-control"><button type="button" class="segment-btn" data-period="1d">1D</button><button type="button" class="segment-btn" data-period="5d">1W</button><button type="button" class="segment-btn" data-period="1mo">1M</button><button type="button" class="segment-btn active" data-period="3mo">3M</button><button type="button" class="segment-btn" data-period="6mo">6M</button><button type="button" class="segment-btn" data-period="1y">1Y</button></div>
@@ -69,7 +81,7 @@
             <div class="section-heading decision-heading">
               <div>
                 <h4><i class="fa-solid fa-brain"></i> AI Technical Decision <span id="tech-decision-horizon" class="badge">--</span></h4>
-                <p class="text-muted text-sm">Nemotron reviews all technical horizons and the selected horizon. Numeric levels come only from deterministic price structure.</p>
+                <p class="text-muted text-sm">Nemotron reviews all technical horizons and selects target and stop-loss from validated price-structure candidates.</p>
               </div>
               <span id="tech-decision-state" class="quality-badge checking"><i class="fa-solid fa-circle-notch"></i> Waiting</span>
             </div>
@@ -77,8 +89,8 @@
               <div class="decision-verdict"><span>Technical action</span><strong id="tech-decision-action">--</strong><small id="tech-decision-consensus">--</small></div>
               <div class="mini-kpi"><span>Technical score</span><b id="tech-decision-score">--</b><small id="tech-decision-confidence">--</small></div>
               <div class="mini-kpi"><span>Entry reference</span><b id="tech-entry">--</b><small>Current validated quote/reference</small></div>
-              <div class="mini-kpi"><span>Technical target zone</span><b id="tech-target">--</b><small id="tech-target-upside">--</small></div>
-              <div class="mini-kpi"><span>Stop / risk-control reference</span><b id="tech-stop">--</b><small id="tech-risk-pct">--</small></div>
+              <div class="mini-kpi"><span>AI-selected target</span><b id="tech-target">--</b><small id="tech-target-upside">--</small></div>
+              <div class="mini-kpi"><span>AI-selected stop-loss</span><b id="tech-stop">--</b><small id="tech-risk-pct">--</small></div>
               <div class="mini-kpi"><span>Risk / reward</span><b id="tech-ai-rr">--</b><small id="tech-invalidation">--</small></div>
             </div>
             <p id="tech-decision-summary" class="thesis-text">Select a horizon to load the technical decision.</p>
@@ -103,14 +115,27 @@
         </div>
 
         <div class="two-panel-grid">
-          <div class="glass-panel"><h3>Important Price Levels</h3><div id="important-levels" class="level-list"></div></div>
+          <div class="glass-panel">
+            <div class="section-heading"><div><h3>Support & Resistance Map <button class="info-btn" data-explain="supportresistance">ⓘ</button></h3><p class="text-muted text-sm">Simple levels around the current price. R1 is nearest resistance and S1 is nearest support.</p></div></div>
+            <div class="support-resistance-layout">
+              <div id="sr-ladder" class="sr-ladder"></div>
+              <div class="sr-indicators-wrap">
+                <table class="data-table sr-table">
+                  <thead><tr><th>Indicator</th><th>Value</th><th>Verdict</th></tr></thead>
+                  <tbody id="sr-indicators-body"></tbody>
+                </table>
+              </div>
+            </div>
+            <div id="important-levels" class="level-list sr-level-list"></div>
+          </div>
           <div class="glass-panel"><h3>Risk / Reward Setup <button class="info-btn" data-explain="riskreward">ⓘ</button></h3><div id="risk-reward" class="rr-grid"></div></div>
         </div>
 
         <div class="glass-panel">
-          <div class="section-heading"><div><h3><i class="fa-solid fa-flask"></i> Historical Strategy Backtest</h3><p class="text-muted text-sm">Transparent in-sample test of V7 technical confluence rules. Includes 1D/5D/10D/20D outcomes and loads only when requested.</p></div><button id="backtest-run" class="glass-btn">Run / Refresh</button></div>
+          <div class="section-heading"><div><h3><i class="fa-solid fa-flask"></i> Strategy Validation Lab</h3><p class="text-muted text-sm">Compare ordinary in-sample history with expanding-window out-of-sample walk-forward validation.</p></div><div class="inline-actions"><button id="backtest-run" class="glass-btn">In-sample</button><button id="walkforward-run" class="glass-btn">Walk-forward</button></div></div>
           <div id="backtest-loading" class="text-muted text-sm">On demand — click Run / Refresh to load the 5-year backtest.</div>
-          <div id="backtest-content" class="hidden"><div id="backtest-kpis" class="diagnostic-grid"></div><div id="backtest-rules" class="text-muted text-sm"></div></div>
+          <div id="backtest-content" class="hidden"><div id="backtest-kpis" class="diagnostic-grid"></div><div id="backtest-rules" class="text-muted text-sm"></div></div><div id="walkforward-content" class="hidden"><div id="walkforward-kpis" class="diagnostic-grid"></div><div id="walkforward-folds" class="table-wrap"></div><p id="walkforward-note" class="text-muted text-sm"></p></div>
+          <details class="strategy-builder"><summary><i class="fa-solid fa-sliders"></i> Custom Strategy Builder</summary><div class="strategy-grid"><label>Direction<select id="strategy-direction" class="glass-input"><option value="LONG">Long</option><option value="SHORT">Short</option></select></label><label>Forward outcome<select id="strategy-forward" class="glass-input"><option value="5">5 sessions</option><option value="10" selected>10 sessions</option><option value="20">20 sessions</option><option value="40">40 sessions</option></select></label><label>RSI min<input id="strategy-rsi-min" class="glass-input" type="number" min="0" max="100" value="45"></label><label>RSI max<input id="strategy-rsi-max" class="glass-input" type="number" min="0" max="100" value="65"></label><label>Min relative volume<input id="strategy-rvol" class="glass-input" type="number" min="0" step="0.1" placeholder="Optional"></label><label class="check-label"><input id="strategy-sma200" type="checkbox" checked> Require price above SMA200</label><label class="check-label"><input id="strategy-macd" type="checkbox" checked> Require MACD confirmation</label><button id="strategy-run" class="glass-btn primary" type="button"><i class="fa-solid fa-play"></i> Test rules</button></div><div id="strategy-results" class="strategy-results text-muted text-sm">Build a simple transparent rule set and test it on historical data.</div></details>
         </div>
 
         <div class="glass-panel ai-thesis-card">
@@ -118,9 +143,41 @@
           <div class="rating-banner"><div class="rating-label">AI Rating</div><div id="ai-rating" class="rating-value">--</div></div><p id="ai-thesis-text" class="thesis-text">--</p>
           <div class="ai-details-grid"><div class="ai-list positives"><h4><i class="fa-solid fa-circle-check"></i> Positives</h4><ul id="ai-positives-list"></ul></div><div class="ai-list risks"><h4><i class="fa-solid fa-triangle-exclamation"></i> Risks</h4><ul id="ai-risks-list"></ul></div></div>
         </div>
+
+        <div id="research-intelligence" class="glass-panel research-panel">
+          <div class="section-heading"><div><h3><i class="fa-solid fa-microscope"></i> Research Intelligence</h3><p class="text-muted text-sm">Sector strength, peers, multi-year financial trends and transparent valuation scenarios load after the core stock view.</p></div><button id="research-refresh" class="glass-btn">Refresh</button></div>
+          <div id="research-loading" class="inline-loading">Waiting for stock analysis…</div>
+          <div id="research-content" class="hidden">
+            <div class="research-summary-grid"><div class="mini-kpi"><span>Sector context</span><b id="research-sector-class">--</b><small id="research-sector-name">--</small></div><div class="mini-kpi"><span>Peer valuation</span><b id="research-peer-value">--</b><small id="research-peer-quality">--</small></div><div class="mini-kpi"><span>Revenue CAGR</span><b id="research-revenue-cagr">--</b><small>Provider financial statements</small></div><div class="mini-kpi"><span>Valuation range</span><b id="research-valuation-range">--</b><small>Illustrative DCF scenarios</small></div></div>
+            <div class="two-panel-grid research-detail-grid"><div><h4>Peer comparison</h4><div id="peer-table" class="table-wrap"></div></div><div><h4>Sector vs market</h4><div id="sector-context-list" class="level-list"></div></div></div>
+            <div class="two-panel-grid research-detail-grid"><div><h4>Financial trend</h4><div id="financial-trend-table" class="table-wrap"></div></div><div><h4>Valuation scenarios</h4><div id="valuation-scenarios" class="level-list"></div></div></div>
+            <div class="research-block ownership-block"><h4>Ownership snapshot</h4><div id="ownership-summary" class="diagnostic-grid"></div><div id="ownership-table" class="table-wrap"></div><p id="ownership-note" class="text-muted text-sm"></p></div>
+          </div>
+        </div>
+
+        <div class="glass-panel">
+          <div class="section-heading"><div><h3><i class="fa-solid fa-clock-rotate-left"></i> AI Decision Track Record</h3><p class="text-muted text-sm">Stored technical calls are audited against subsequent price movement so recommendations can be judged, not just displayed.</p></div><button id="recommendation-refresh" class="glass-btn">Refresh</button></div>
+          <div id="recommendation-summary" class="diagnostic-grid"></div><div id="recommendation-history" class="table-wrap"><p class="text-muted text-sm">History builds as V8 technical decisions are requested.</p></div>
+        </div>
       </div>
 
       <div class="side-column">
+        <div class="glass-panel technical-summary-panel">
+          <div class="section-heading"><div><h3>Technical Summary <button class="info-btn" data-explain="summarybox">ⓘ</button></h3><p id="tech-summary-subtitle" class="text-muted text-sm">A quick read of the selected-horizon technical picture.</p></div></div>
+          <div class="summary-card">
+            <div class="summary-copy">
+              <span class="text-muted text-sm">Based on <b id="tech-summary-horizon">--</b> data</span>
+              <h4 id="tech-summary-rating">--</h4>
+              <p id="tech-summary-text" class="text-muted text-sm">Waiting for technical data…</p>
+            </div>
+            <div class="summary-legend">
+              <span><i class="legend-dot bad"></i> Bearish <b id="tech-bear-count">0</b></span>
+              <span><i class="legend-dot neutral"></i> Neutral <b id="tech-neutral-count">0</b></span>
+              <span><i class="legend-dot good"></i> Bullish <b id="tech-bull-count">0</b></span>
+            </div>
+          </div>
+          <div id="tech-summary-bars" class="summary-bars"></div>
+        </div>
         <div class="glass-panel scores-panel"><h3>Algorithmic Scores</h3><div class="score-grid">
           <div class="score-item"><div class="score-label">Overall</div><div class="score-bar-container"><div id="score-overall" class="score-bar"></div></div><div id="score-overall-val" class="score-val">--</div></div>
           <div class="score-item"><div class="score-label">Fundamental</div><div class="score-bar-container"><div id="score-fund" class="score-bar"></div></div><div id="score-fund-val" class="score-val">--</div></div>
@@ -141,6 +198,46 @@
         <div class="glass-panel news-panel"><h3>Recent News</h3><div id="news-list" class="news-list"></div></div>
       </div>
     </div>
+  </div>
+</section>
+
+
+<section id="tab-market" class="tab-pane hidden fade-in">
+  <div class="page-intro"><div><span class="eyebrow">Market context</span><h2>Market & Sector Dashboard</h2><p>Before judging an individual setup, check breadth, index momentum and sector participation.</p></div><div class="inline-actions"><select id="market-overview-market" class="glass-input"><option value="IN">🇮🇳 India</option><option value="US">🇺🇸 US</option></select><button id="market-overview-refresh" class="glass-btn primary">Refresh</button></div></div>
+  <div id="market-overview-loading" class="loading-state hidden"><div class="spinner"></div><p>Loading breadth and market proxies…</p></div>
+  <div id="market-overview-error" class="error-state hidden surface-card"><p id="market-overview-error-msg"></p></div>
+  <div id="market-overview-results" class="hidden">
+    <div class="surface-card"><div class="section-heading"><div><h3>Market Regime</h3><p class="text-muted text-sm">Breadth measures how much of the configured universe participates in the move.</p></div><span id="market-regime-badge" class="quality-badge single">--</span></div><div id="market-breadth-grid" class="research-summary-grid"></div><p id="market-overview-note" class="text-muted text-sm"></p></div>
+    <div class="surface-card"><h3>Indices & Sector Proxies</h3><div id="market-index-grid" class="market-index-grid"></div></div>
+  </div>
+</section>
+
+<section id="tab-intraday" class="tab-pane hidden fade-in">
+  <div class="page-intro"><div><span class="eyebrow">Stocks · Session workspace</span><h2>Intraday Lab</h2><p>Current-session structure with exchange-local candles, VWAP, opening range and fast momentum. Signals can change quickly.</p></div></div>
+  <div class="surface-card search-container"><div class="search-bar"><select id="intraday-market" class="glass-input"><option value="IN">🇮🇳 India (NSE)</option><option value="US">🇺🇸 US</option></select><input id="intraday-symbol" class="glass-input" placeholder="TCS or AAPL"><select id="intraday-interval" class="glass-input"><option value="1m">1 minute</option><option value="5m" selected>5 minutes</option><option value="15m">15 minutes</option><option value="30m">30 minutes</option><option value="60m">60 minutes</option></select><button id="intraday-run" class="glass-btn primary"><i class="fa-solid fa-bolt"></i> Analyze session</button></div></div>
+  <div id="intraday-loading" class="loading-state hidden"><div class="spinner"></div><p>Loading current exchange session…</p></div><div id="intraday-error" class="error-state hidden glass-panel"><p id="intraday-error-msg"></p></div>
+  <div id="intraday-results" class="hidden">
+    <div class="intraday-hero surface-card"><div><span class="eyebrow">Live/session research</span><h2 id="intraday-name">--</h2><p id="intraday-session-meta">--</p></div><div class="intraday-price"><strong id="intraday-price">--</strong><span id="intraday-bias" class="bias-chip neutral">--</span></div></div>
+    <div class="dashboard-grid"><div class="main-column">
+      <div class="surface-card chart-container intraday-chart-card"><div class="section-heading"><div><h3>Intraday Candles</h3><p class="text-muted text-sm">Latest exchange session plus Nemotron-selected next candle, target and stop-loss.</p></div></div><div id="intraday-chart-meta" class="chart-data-meta">AI projection loads after session data.</div><div id="intraday-chart" class="plotly-chart"></div></div>
+      <div class="surface-card">
+        <div class="section-heading"><div><h3>Session Decision</h3><p class="text-muted text-sm">Deterministic session structure first; Nemotron synthesis loads separately.</p></div><span id="intraday-ai-state" class="quality-badge checking">Waiting</span></div>
+        <div class="decision-grid intraday-decision-grid">
+          <div class="decision-verdict"><span>Action</span><strong id="intraday-action">--</strong><small id="intraday-agreement">--</small></div>
+          <div class="mini-kpi"><span>AI target</span><b id="intraday-target">--</b><small id="intraday-target-note">AI reviews validated session levels</small></div>
+          <div class="mini-kpi"><span>AI stop-loss</span><b id="intraday-stop">--</b><small id="intraday-stop-note">AI reviews validated session levels</small></div>
+          <div class="mini-kpi"><span>Risk / reward</span><b id="intraday-rr">--</b><small id="intraday-plan-note">Based on current session structure</small></div>
+        </div>
+        <p id="intraday-ai-summary" class="thesis-text">--</p>
+        <div class="two-panel-grid intraday-ai-grid">
+          <div class="surface-subcard"><h4><i class="fa-solid fa-circle-check"></i> Technical confirmation</h4><ul id="intraday-confirming-list" class="compact-list"></ul></div>
+          <div class="surface-subcard"><h4><i class="fa-solid fa-triangle-exclamation"></i> Risks / invalidation</h4><ul id="intraday-risk-list" class="compact-list"></ul></div>
+        </div>
+      </div>
+      <div class="surface-card intraday-tech-card"><div class="section-heading"><div><h3>Intraday Technical Analysis</h3><p class="text-muted text-sm">Fast technical interpretation from VWAP, EMA trend, RSI, MACD and opening-range behavior.</p></div></div><div id="intraday-technical-grid" class="diagnostic-grid"></div><ul id="intraday-tech-points" class="compact-list intraday-checklist"></ul></div>
+    </div><div class="side-column">
+      <div class="surface-card metrics-panel"><h3>Session Metrics</h3><div class="metrics-grid"><div class="metric-box"><div class="m-label">VWAP</div><div id="intra-vwap" class="m-val">--</div></div><div class="metric-box"><div class="m-label">RSI 14</div><div id="intra-rsi" class="m-val">--</div></div><div class="metric-box"><div class="m-label">EMA 9 / 21</div><div id="intra-ema" class="m-val small-val">--</div></div><div class="metric-box"><div class="m-label">Opening Range</div><div id="intra-orb" class="m-val small-val">--</div></div><div class="metric-box"><div class="m-label">Session High</div><div id="intra-high" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Session Low</div><div id="intra-low" class="m-val">--</div></div></div></div>
+    </div></div>
   </div>
 </section>
 
@@ -222,12 +319,13 @@
         </div></div>
       </div>
     </div>
+    <div class="surface-card fund-intelligence-extra"><div class="section-heading"><div><h3><i class="fa-solid fa-layer-group"></i> Portfolio Overlap & Category Context</h3><p class="text-muted text-sm">Compare another fund. US top-holdings overlap is available when Yahoo exposes holdings; Indian MFAPI does not contain holdings.</p></div></div><div class="overlap-controls"><input id="mf-overlap-id" class="glass-input" placeholder="Second fund ticker / scheme code"><button id="mf-overlap-run" class="glass-btn">Compare overlap</button></div><div id="mf-overlap-result" class="text-muted text-sm">Choose a second fund to compare.</div></div>
   </div>
 </section>
 
 <section id="tab-screener" class="tab-pane hidden fade-in">
   <div class="glass-panel">
-    <div class="section-heading"><div><h2><i class="fa-solid fa-filter"></i> Global Screener V7</h2><p class="text-muted">Scan count controls how many candidates are evaluated. Result count controls how many matching rows are shown.</p></div></div>
+    <div class="section-heading"><div><h2><i class="fa-solid fa-filter"></i> Global Screener V8.2</h2><p class="text-muted">Scan count controls how many candidates are evaluated. Result count controls how many matching rows are shown.</p></div></div>
     <div class="screener-controls v5-controls">
       <select id="screen-asset" class="glass-input"><option value="STOCK">Stocks</option><option value="FUND">Mutual Funds / ETFs</option></select>
       <select id="screen-market" class="glass-input"><option value="IN">🇮🇳 India</option><option value="US">🇺🇸 US</option></select>
@@ -250,24 +348,43 @@
     <p id="screen-help" class="text-muted text-sm"></p>
   </div>
   <div id="screen-loading" class="loading-state hidden"><div class="spinner"></div><p>Screening candidates. Large universes can take time with free data sources...</p></div><div id="screen-error" class="error-state hidden glass-panel"><p id="screen-error-msg"></p></div>
-  <div id="screen-results" class="glass-panel hidden"><div id="screen-summary" class="screen-summary"></div><div class="table-wrap"><table class="data-table"><thead id="screen-head"></thead><tbody id="screen-body"></tbody></table></div><p id="screen-note" class="text-muted text-sm"></p><p class="text-muted text-sm"><i class="fa-solid fa-arrow-pointer"></i> Click any result row to open its full Stocks or Funds analysis.</p></div>
+  <div id="screen-results" class="glass-panel hidden"><div id="screen-summary" class="screen-summary"></div><div id="screen-ai-recommended" class="screen-ai-panel hidden"></div><div class="table-wrap"><table class="data-table"><thead id="screen-head"></thead><tbody id="screen-body"></tbody></table></div><p id="screen-note" class="text-muted text-sm"></p><p class="text-muted text-sm"><i class="fa-solid fa-arrow-pointer"></i> Click any result row to open its full Stocks or Funds analysis.</p></div>
+</section>
+
+
+<section id="tab-ipo" class="tab-pane hidden fade-in">
+  <div class="page-intro"><div><span class="eyebrow">Pre-listing research</span><h2>IPO Research Desk</h2><p>Official/public issue facts, filing links and conservative AI classification before listing. No GMP is used.</p></div></div>
+  <div class="surface-card"><div class="section-heading"><div><h3>Current & Upcoming Issues</h3><p class="text-muted text-sm">India uses NSE issue feeds + SEBI filings. US uses Nasdaq IPO calendar data. Availability depends on source access.</p></div><div class="inline-actions"><select id="ipo-market" class="glass-input"><option value="IN">🇮🇳 India</option><option value="US">🇺🇸 US</option></select><input id="ipo-month" type="month" class="glass-input hidden"><button id="ipo-refresh" class="glass-btn primary">Refresh</button></div></div><div class="ipo-toolbar"><input id="ipo-search" class="glass-input" placeholder="Search IPO name or symbol"><div class="text-muted text-sm" id="ipo-count">Type to filter current issues.</div></div><div id="ipo-source-note" class="data-source-note"></div><div id="ipo-loading" class="loading-state hidden"><div class="spinner"></div><p>Loading IPO calendar…</p></div><div id="ipo-list" class="ipo-grid"></div></div>
+  <div id="ipo-detail" class="hidden ipo-detail-layout">
+    <div class="surface-card"><div class="section-heading"><div><span class="eyebrow">Selected issue</span><h2 id="ipo-name">--</h2><p id="ipo-meta" class="text-muted">--</p></div><span id="ipo-verdict" class="ipo-verdict watch">WATCH</span></div><div class="research-summary-grid"><div class="mini-kpi"><span>Research score</span><b id="ipo-score">--</b><small id="ipo-completeness">--</small></div><div class="mini-kpi"><span>Price band</span><b id="ipo-price-band">--</b><small>Official feed when available</small></div><div class="mini-kpi"><span>Subscription</span><b id="ipo-subscription">--</b><small>Total demand where available</small></div><div class="mini-kpi"><span>Issue window</span><b id="ipo-window">--</b><small id="ipo-listing">--</small></div></div><h3>AI Pre-listing View</h3><p id="ipo-thesis" class="thesis-text">--</p><div class="ai-details-grid"><div class="ai-list positives"><h4>Positives</h4><ul id="ipo-positives"></ul></div><div class="ai-list risks"><h4>Risks / gaps</h4><ul id="ipo-risks"></ul></div></div><div><h4>Due diligence before applying</h4><ul id="ipo-due-diligence" class="compact-list"></ul></div><div id="ipo-filings" class="filing-list"></div><p class="text-muted text-sm">SUBSCRIBE/WATCH/AVOID is non-personalized research, not a guarantee of allotment, listing gain or profit.</p></div>
+  </div>
 </section>
 
 <section id="tab-portfolio" class="tab-pane hidden fade-in">
   <div class="glass-panel"><div class="section-heading"><div><h2><i class="fa-solid fa-briefcase"></i> FX-Normalized Portfolio Analyzer</h2><p class="text-muted">India + US stocks/funds are converted into a selected base currency using the latest available USD/INR quote.</p></div><div class="inline-actions"><select id="portfolio-base" class="glass-input"><option value="INR">Base: INR</option><option value="USD">Base: USD</option></select><button id="portfolio-add" class="glass-btn"><i class="fa-solid fa-plus"></i> Add holding</button></div></div>
-    <div class="table-wrap"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Symbol / Scheme</th><th>Quantity</th><th>Avg Price / NAV</th><th></th></tr></thead><tbody id="portfolio-input-body"></tbody></table></div><button id="portfolio-run" class="glass-btn primary portfolio-run">Analyze Portfolio</button>
+    <div class="table-wrap"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Symbol / Scheme</th><th>Quantity</th><th>Avg Price / NAV</th><th></th></tr></thead><tbody id="portfolio-input-body"></tbody></table></div><div class="inline-actions portfolio-actions"><button id="portfolio-run" class="glass-btn primary portfolio-run">Analyze Portfolio</button><button id="portfolio-risk-run" class="glass-btn">Risk Engine</button></div>
   </div>
   <div id="portfolio-loading" class="loading-state hidden"><div class="spinner"></div><p>Analyzing holdings and normalizing FX...</p></div><div id="portfolio-error" class="error-state hidden glass-panel"><p id="portfolio-error-msg"></p></div>
   <div id="portfolio-results" class="hidden fade-in"><div class="glass-panel metrics-panel"><h3>Portfolio Summary</h3><div class="metrics-grid"><div class="metric-box"><div class="m-label">Market Value</div><div id="pf-value" class="m-val">--</div></div><div class="metric-box"><div class="m-label">P&L</div><div id="pf-pnl" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Quality</div><div id="pf-quality" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Largest Weight</div><div id="pf-concentration" class="m-val">--</div></div></div><p id="pf-fx-note" class="text-muted text-sm"></p></div><div class="glass-panel"><div id="pf-warnings"></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Holding</th><th>Asset</th><th>Market</th><th>Weight</th><th>P&L</th><th>Score</th><th>Rating</th></tr></thead><tbody id="pf-body"></tbody></table></div></div></div>
+<div id="portfolio-risk-results" class="surface-card hidden"><div class="section-heading"><div><h3><i class="fa-solid fa-shield-halved"></i> Portfolio Risk Engine</h3><p class="text-muted text-sm">Historical volatility, VaR, drawdown, sector concentration and correlation.</p></div></div><div id="portfolio-risk-kpis" class="diagnostic-grid"></div><div class="two-panel-grid"><div><h4>Sector concentration</h4><div id="portfolio-sector-risk" class="level-list"></div></div><div><h4>Highest correlations</h4><div id="portfolio-correlations" class="level-list"></div></div></div><p id="portfolio-risk-note" class="text-muted text-sm"></p></div>
+  <div class="surface-card"><div class="section-heading"><div><h3><i class="fa-solid fa-book"></i> Paper Trade Journal</h3><p class="text-muted text-sm">Record simulated ideas locally before risking capital. Nothing here sends an order.</p></div><button id="paper-clear" class="glass-btn">Clear journal</button></div><div class="paper-form"><select id="paper-market" class="glass-input"><option value="IN">India</option><option value="US">US</option></select><input id="paper-symbol" class="glass-input" placeholder="Symbol"><select id="paper-action" class="glass-input"><option>BUY</option><option>HOLD</option><option>SELL</option></select><input id="paper-entry" class="glass-input" type="number" step="any" placeholder="Entry"><input id="paper-target" class="glass-input" type="number" step="any" placeholder="Target"><input id="paper-stop" class="glass-input" type="number" step="any" placeholder="Risk level"><button id="paper-add" class="glass-btn primary">Add idea</button></div><div id="paper-journal" class="table-wrap"></div></div>
 </section>
 
 <section id="tab-watchlist" class="tab-pane hidden fade-in">
-  <div class="glass-panel"><div class="section-heading"><div><h2><i class="fa-regular fa-star"></i> Watchlist & Signal Alerts</h2><p class="text-muted">Saved locally in your browser. Check support/breakout, RSI and near-term company event alerts.</p></div><button id="watch-check" class="glass-btn primary">Check now</button></div><div id="watchlist-items" class="watchlist-grid"></div></div>
+  <div class="glass-panel"><div class="section-heading"><div><h2><i class="fa-regular fa-star"></i> Watchlist & Signal Alerts</h2><p class="text-muted">Saved locally in your browser. Check RSI, price levels, volume, breakouts/breakdowns and near-term company events.</p></div><button id="watch-check" class="glass-btn primary">Check now</button></div><div id="watchlist-items" class="watchlist-grid"></div></div>
   <div id="watch-loading" class="loading-state hidden"><div class="spinner"></div><p>Checking watchlist...</p></div><div id="watch-results" class="glass-panel hidden"><h3>Triggered Alerts</h3><div id="watch-alerts"></div></div>
 </section>
 
 </main></div>
 
+
+<button id="chat-fab" class="chat-fab" aria-label="Open V8 assistant"><i class="fa-solid fa-message"></i><span>Ask V8</span></button>
+<aside id="chat-panel" class="chat-panel hidden" aria-label="V8 research assistant">
+  <div class="chat-panel-header"><div><b><i class="fa-solid fa-sparkles"></i> V8 Assistant</b><small>Ask about the app, indicators or the stock/fund you are viewing.</small></div><button id="chat-close" class="icon-btn"><i class="fa-solid fa-xmark"></i></button></div>
+  <div id="chat-messages" class="chat-messages"><div class="chat-message bot">Hi — ask me what a metric means, how to use a feature, or to explain the current analysis.</div></div>
+  <div id="chat-context" class="chat-context">Context: General help</div>
+  <form id="chat-form" class="chat-form"><textarea id="chat-input" class="glass-input" rows="2" placeholder="e.g. Why is this stock HOLD on 1M?"></textarea><button id="chat-send" class="glass-btn primary chat-send-btn" type="submit" aria-label="Send message"><i class="fa-solid fa-paper-plane"></i><span>Send</span></button></form>
+</aside>
 <div id="explain-modal" class="modal hidden"><div class="modal-card glass-panel"><button id="explain-close" class="icon-btn modal-close"><i class="fa-solid fa-xmark"></i></button><h3 id="explain-title">Metric</h3><div id="explain-body" class="modal-body"></div></div></div>
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=8.2.8"></script>
 </body></html>

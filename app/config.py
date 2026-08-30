@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     nvidia_api_key: str
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
-    nvidia_model: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
+    nvidia_model: str = "nvidia/nemotron-3-ultra-550b-a55b"
     database_url: str = "postgresql://stockai:stockai@postgres:5432/stockai"
     redis_url: str = "redis://redis:6379/0"
     cache_ttl_seconds: int = 300

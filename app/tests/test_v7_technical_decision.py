@@ -72,3 +72,48 @@ def test_ai_rule_disagreement_downgrades_final_action_to_hold(monkeypatch):
     assert result["deterministic_recommendation"] == "BUY"
     assert result["recommendation"] == "HOLD"
     assert result["consensus"] is False
+
+
+def test_nemotron_selects_target_and_stop_from_validated_candidates(monkeypatch):
+    from app.services import technical_decision as td
+    technical = _technical("BULLISH")
+    monkeypatch.setattr(td, "analyze_stock_core", lambda *a, **k: {"evidence": {"technical": technical}})
+    monkeypatch.setattr(td, "synthesize_technical_decision", lambda payload: {
+        "recommendation": "BUY",
+        "confidence": "high",
+        "summary": "Validated bullish setup",
+        "confirming_signals": ["Synthetic confirmation"],
+        "conflicting_signals": [],
+        "setup_direction": "BULLISH",
+        "target_candidate_id": "nearest_resistance_center",
+        "stop_candidate_id": "nearest_support_low",
+        "level_rationale": "Nearest resistance is the objective and support defines risk.",
+    })
+    monkeypatch.setattr(td, "set_json", lambda *a, **k: None)
+    result = td.get_technical_ai_decision("TEST", "IN", "1D", force_refresh=True)
+    assert result["setup"]["level_source"] == "ai_selected"
+    assert result["setup"]["target_zone"]["mid"] == 109.0
+    assert result["setup"]["risk_control_level"] == 96.0
+    assert result["setup"]["risk_reward_ratio"] == 2.25
+
+
+def test_invalid_ai_level_pair_uses_validated_fallback(monkeypatch):
+    from app.services import technical_decision as td
+    technical = _technical("BULLISH")
+    monkeypatch.setattr(td, "analyze_stock_core", lambda *a, **k: {"evidence": {"technical": technical}})
+    monkeypatch.setattr(td, "synthesize_technical_decision", lambda payload: {
+        "recommendation": "BUY",
+        "confidence": "medium",
+        "summary": "Invalid synthetic pair",
+        "confirming_signals": [],
+        "conflicting_signals": [],
+        "setup_direction": "BULLISH",
+        "target_candidate_id": "nearest_support_center",
+        "stop_candidate_id": "nearest_resistance_center",
+        "level_rationale": "Intentionally invalid for the test.",
+    })
+    monkeypatch.setattr(td, "set_json", lambda *a, **k: None)
+    result = td.get_technical_ai_decision("TEST", "IN", "1D", force_refresh=True)
+    assert result["setup"]["level_source"] == "deterministic_fallback"
+    assert result["setup"]["target_zone"]["mid"] > result["setup"]["entry_reference"]
+    assert result["setup"]["risk_control_level"] < result["setup"]["entry_reference"]

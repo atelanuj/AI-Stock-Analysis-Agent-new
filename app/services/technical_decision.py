@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import math
 
 from app.agent.client import synthesize_technical_decision
 from app.cache.redis_cache import get_json, set_json
 from app.config import settings
+from app.db.database import save_technical_recommendation
 from app.services.analysis import analyze_stock_core
 
 _HORIZONS = {"1D", "1W", "1M", "3M", "6M", "1Y"}
@@ -74,6 +76,86 @@ def _target_and_risk(technical: dict, horizon: str, recommendation: str) -> dict
         "risk_reward_ratio": round(ratio, 2) if ratio is not None else None,
         "setup_direction": direction,
         "note": "Target zone and risk-control level are model-derived technical references, not confirmed future prices or personalized stop-loss advice.",
+    }
+
+
+def _level_candidates(technical: dict, horizon: str, fallback: dict) -> list[dict]:
+    """Expose audited price-structure choices for the model to select from."""
+    levels = (technical.get("timeline_biases", {}).get(horizon, {}).get("levels", {}) or {})
+    candidates: list[dict] = []
+    seen: set[tuple[str, float]] = set()
+
+    def add(candidate_id: str, label: str, kind: str, value) -> None:
+        try:
+            price = float(value)
+        except (TypeError, ValueError):
+            return
+        if not math.isfinite(price) or price <= 0:
+            return
+        rounded = round(price, 4)
+        marker = (kind, rounded)
+        if marker in seen:
+            return
+        seen.add(marker)
+        candidates.append({"id": candidate_id, "label": label, "kind": kind, "price": rounded})
+
+    for level_name in ("nearest_support", "major_support", "nearest_resistance", "major_resistance"):
+        zone = levels.get(level_name) or {}
+        kind = "support" if "support" in level_name else "resistance"
+        for bound in ("low", "center", "high"):
+            add(f"{level_name}_{bound}", f"{level_name.replace('_', ' ')} {bound}", kind, zone.get(bound))
+
+    selected = technical.get("timeline_biases", {}).get(horizon, {}) or {}
+    rr = selected.get("risk_reward", {}) or {}
+    add("structure_target_reference", "price-structure target reference", "target_reference", rr.get("target_reference"))
+    add("structure_invalidation", "price-structure invalidation", "invalidation", rr.get("invalidation_level"))
+    zone = fallback.get("target_zone", {}) or {}
+    for bound in ("low", "mid", "high"):
+        add(f"fallback_target_{bound}", f"fallback target {bound}", "target_reference", zone.get(bound))
+    add("fallback_risk_control", "fallback risk-control level", "invalidation", fallback.get("risk_control_level"))
+    return candidates
+
+
+def _ai_selected_setup(technical: dict, horizon: str, ai: dict, fallback: dict) -> dict:
+    """Resolve the model's candidate choices and reject inconsistent levels."""
+    candidates = _level_candidates(technical, horizon, fallback)
+    by_id = {item["id"]: item for item in candidates}
+    target_item = by_id.get(str(ai.get("target_candidate_id") or ""))
+    stop_item = by_id.get(str(ai.get("stop_candidate_id") or ""))
+    direction = str(ai.get("setup_direction") or fallback.get("setup_direction") or "BULLISH").upper()
+    entry = float(fallback.get("entry_reference") or technical.get("price") or 0)
+
+    valid = direction in {"BULLISH", "BEARISH"} and target_item is not None and stop_item is not None and entry > 0
+    if valid:
+        target = float(target_item["price"])
+        stop = float(stop_item["price"])
+        valid = (direction == "BULLISH" and target > entry > stop) or (direction == "BEARISH" and target < entry < stop)
+
+    if not valid:
+        result = deepcopy(fallback)
+        result["level_source"] = "deterministic_fallback"
+        result["level_rationale"] = "Nemotron did not return a valid directional pair from the supplied level candidates; validated fallback levels are shown."
+        return result
+
+    reward = abs(target - entry)
+    risk = abs(entry - stop)
+    ratio = reward / risk if risk > 0 else None
+    return {
+        "entry_reference": round(entry, 4),
+        "target_zone": {"low": round(target, 4), "high": round(target, 4), "mid": round(target, 4)},
+        "risk_control_level": round(stop, 4),
+        "invalidation_level": round(stop, 4),
+        "potential_reward_pct": round(reward / entry * 100, 2),
+        "potential_risk_pct": round(risk / entry * 100, 2),
+        "risk_reward_ratio": round(ratio, 2) if ratio is not None else None,
+        "setup_direction": direction,
+        "level_source": "ai_selected",
+        "target_candidate_id": target_item["id"],
+        "stop_candidate_id": stop_item["id"],
+        "target_candidate_label": target_item["label"],
+        "stop_candidate_label": stop_item["label"],
+        "level_rationale": str(ai.get("level_rationale") or "Nemotron selected these levels from validated price-structure candidates."),
+        "note": "Target and stop-loss were selected by Nemotron from validated technical levels; they are estimates, not guaranteed prices or personalized advice.",
     }
 
 
@@ -169,7 +251,7 @@ def build_technical_decision(technical: dict, horizon: str) -> dict:
 
 def get_technical_ai_decision(symbol: str, market: str = "IN", horizon: str = "1M", force_refresh: bool = False) -> dict:
     symbol = symbol.strip().upper(); market = market.upper(); horizon = horizon.upper()
-    key = f"analysis:v7:technical-decision:{market}:{symbol}:{horizon}"
+    key = f"analysis:v8:technical-decision:{market}:{symbol}:{horizon}"
     if not force_refresh:
         cached = get_json(key)
         if cached:
@@ -179,12 +261,14 @@ def get_technical_ai_decision(symbol: str, market: str = "IN", horizon: str = "1
     core = analyze_stock_core(symbol, market=market, force_refresh=force_refresh)
     technical = core["evidence"]["technical"]
     deterministic = build_technical_decision(technical, horizon)
+    level_candidates = _level_candidates(technical, horizon, deterministic["setup"])
 
     payload = {
         "symbol": symbol,
         "market": market,
         "horizon": horizon,
         "technical_evidence": {
+            "current_price": technical.get("price"),
             "timeline_biases": technical.get("timeline_biases", {}),
             "trend_alignment": technical.get("trend_alignment", {}),
             "market_regime": technical.get("market_regime", {}),
@@ -200,6 +284,7 @@ def get_technical_ai_decision(symbol: str, market: str = "IN", horizon: str = "1
             "relative_strength": technical.get("relative_strength", {}),
         },
         "deterministic_scaffold": deterministic,
+        "level_candidates": level_candidates,
     }
 
     try:
@@ -211,6 +296,7 @@ def get_technical_ai_decision(symbol: str, market: str = "IN", horizon: str = "1
             "summary": "AI technical synthesis was unavailable; the deterministic technical recommendation is shown.",
             "confirming_signals": [],
             "conflicting_signals": [f"AI synthesis error: {str(exc)[:180]}"],
+            "setup_direction": deterministic["setup"]["setup_direction"],
         }
 
     ai_recommendation = str(ai.get("recommendation", deterministic["deterministic_recommendation"])).upper()
@@ -223,10 +309,10 @@ def get_technical_ai_decision(symbol: str, market: str = "IN", horizon: str = "1
     deterministic_recommendation = deterministic["deterministic_recommendation"]
     recommendation = ai_recommendation if ai_recommendation == deterministic_recommendation else "HOLD"
 
-    # Numeric target/risk levels are always produced by deterministic
-    # price-structure logic after the consensus recommendation is known. The
-    # model is never allowed to invent or alter prices.
-    setup = _target_and_risk(technical, horizon, recommendation)
+    # Nemotron selects among audited, real price-structure candidates. Invalid
+    # IDs or directionally inconsistent pairs fall back to deterministic levels.
+    fallback_setup = _target_and_risk(technical, horizon, recommendation)
+    setup = _ai_selected_setup(technical, horizon, ai, fallback_setup)
     result = {
         "symbol": symbol,
         "market": market,
@@ -243,7 +329,8 @@ def get_technical_ai_decision(symbol: str, market: str = "IN", horizon: str = "1
         "setup": setup,
         "methodology": deterministic["methodology"],
         "cache": "miss",
-        "disclaimer": "Technical research only. BUY/HOLD/SELL is not personalized financial advice. Target zones and risk-control levels are model-derived estimates, never confirmed future prices.",
+        "disclaimer": "Technical research only. BUY/HOLD/SELL is not personalized financial advice. Nemotron selects target and stop-loss from validated technical candidates; these remain estimates, never confirmed future prices.",
     }
     set_json(key, result, ttl=settings.ai_cache_ttl_seconds)
+    save_technical_recommendation(symbol, market, horizon, {**result, "ai": ai})
     return result

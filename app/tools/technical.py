@@ -276,6 +276,134 @@ def get_ohlcv_history(symbol: str, market: str | None = None, period: str = "6mo
     return rows
 
 
+def predict_next_candle(candles: list[dict], interval: str = "1d", pattern_window: int = 3, max_analogs: int = 12) -> dict | None:
+    """Estimate one next OHLC bar from similar historical candle-shape sequences.
+
+    The calculation is deliberately deterministic and scale-free: the latest
+    ``pattern_window`` candles are compared with earlier windows using gap,
+    body, wick and range percentages.  The following bars from the closest
+    historical analogs are combined with distance weighting.  This is an
+    indicative projection for charting, not a guaranteed price forecast.
+    """
+    if len(candles) < max(12, pattern_window * 3 + 2):
+        return None
+
+    frame = pd.DataFrame(candles)
+    required = ["date", "open", "high", "low", "close"]
+    if any(column not in frame.columns for column in required):
+        return None
+    for column in ["open", "high", "low", "close"]:
+        frame[column] = pd.to_numeric(frame[column], errors="coerce")
+    frame["timestamp"] = pd.to_datetime(frame["date"], errors="coerce")
+    frame = frame.dropna(subset=["timestamp", "open", "high", "low", "close"]).reset_index(drop=True)
+    if len(frame) < max(12, pattern_window * 3 + 2):
+        return None
+
+    features: list[tuple[int, np.ndarray]] = []
+    for pos in range(1, len(frame)):
+        previous_close = float(frame.loc[pos - 1, "close"])
+        if previous_close <= 0:
+            continue
+        row = frame.loc[pos]
+        open_price, high, low, close = map(float, (row["open"], row["high"], row["low"], row["close"]))
+        vector = np.array([
+            (open_price / previous_close) - 1,
+            (close - open_price) / previous_close,
+            max(0.0, high - max(open_price, close)) / previous_close,
+            max(0.0, min(open_price, close) - low) / previous_close,
+            max(0.0, high - low) / previous_close,
+        ], dtype=float)
+        if np.isfinite(vector).all():
+            features.append((pos, vector))
+
+    if len(features) < pattern_window * 2 + 1:
+        return None
+    matrix = np.vstack([vector for _, vector in features])
+    scale = np.std(matrix, axis=0)
+    scale = np.where(scale < 1e-5, 1e-5, scale)
+    current = matrix[-pattern_window:]
+
+    analogs: list[tuple[float, np.ndarray, bool]] = []
+    for end_idx in range(pattern_window - 1, len(features) - 1):
+        sequence = matrix[end_idx - pattern_window + 1:end_idx + 1]
+        if sequence.shape != current.shape:
+            continue
+        distance = float(np.sqrt(np.mean(((sequence - current) / scale) ** 2)))
+        end_pos = features[end_idx][0]
+        next_pos = end_pos + 1
+        if next_pos >= len(frame):
+            continue
+        anchor = float(frame.loc[end_pos, "close"])
+        if anchor <= 0:
+            continue
+        next_row = frame.loc[next_pos]
+        outcome = np.array([
+            float(next_row["open"]) / anchor - 1,
+            float(next_row["high"]) / anchor - 1,
+            float(next_row["low"]) / anchor - 1,
+            float(next_row["close"]) / anchor - 1,
+        ], dtype=float)
+        if np.isfinite(outcome).all():
+            analogs.append((distance, np.clip(outcome, -0.25, 0.25), float(next_row["close"]) >= float(next_row["open"])))
+
+    if not analogs:
+        return None
+    chosen = sorted(analogs, key=lambda item: item[0])[:max_analogs]
+    distances = np.array([item[0] for item in chosen], dtype=float)
+    weights = 1.0 / (distances + 0.05)
+    outcomes = np.vstack([item[1] for item in chosen])
+    projected = np.average(outcomes, axis=0, weights=weights)
+
+    latest_close = float(frame.iloc[-1]["close"])
+    open_price, high, low, close = latest_close * (1 + projected)
+    high = max(high, open_price, close)
+    low = min(low, open_price, close)
+    if min(open_price, high, low, close) <= 0:
+        return None
+
+    bullish_weight = sum(weight for weight, item in zip(weights, chosen) if item[2])
+    bullish_share = bullish_weight / weights.sum() * 100
+    agreement = max(bullish_share, 100 - bullish_share)
+    similarity = 100 / (1 + float(np.average(distances, weights=weights)))
+    confidence = round(min(85.0, max(35.0, 0.55 * agreement + 0.30 * similarity)), 1)
+    body_pct = abs(close / open_price - 1) * 100 if open_price else 0
+    direction = "NEUTRAL" if body_pct < 0.05 else "BULLISH" if close > open_price else "BEARISH"
+
+    last_timestamp = pd.Timestamp(frame.iloc[-1]["timestamp"])
+    if interval == "1d":
+        next_timestamp = last_timestamp + pd.offsets.BusinessDay(1)
+        next_date = next_timestamp.strftime("%Y-%m-%d")
+    else:
+        deltas = frame["timestamp"].diff().dropna()
+        deltas = deltas[deltas > pd.Timedelta(0)]
+        step = deltas.median() if not deltas.empty else pd.Timedelta(minutes=5)
+        next_date = (last_timestamp + step).isoformat()
+
+    pattern_frame = pd.DataFrame({
+        "Open": frame["open"].values,
+        "High": frame["high"].values,
+        "Low": frame["low"].values,
+        "Close": frame["close"].values,
+    }, index=pd.DatetimeIndex(frame["timestamp"]))
+    recent_patterns = detect_candlestick_patterns(pattern_frame, lookback=pattern_window, max_results=6)
+    source_patterns = list(dict.fromkeys(item["pattern"] for item in recent_patterns))
+
+    return {
+        "date": next_date,
+        "open": round(open_price, 4),
+        "high": round(high, 4),
+        "low": round(low, 4),
+        "close": round(close, 4),
+        "direction": direction,
+        "confidence_pct": confidence,
+        "analogs_used": len(chosen),
+        "pattern_window": pattern_window,
+        "source_patterns": source_patterns,
+        "method": f"Distance-weighted outcome of {len(chosen)} closest historical {pattern_window}-candle shape analogs.",
+        "note": "Indicative next-candle projection from historical candle shapes; not a guaranteed forecast or trading instruction.",
+    }
+
+
 def _cluster_price_zones(values: list[tuple[float, int]], latest: float, tolerance: float) -> list[dict]:
     if not values: return []
     clusters: list[dict] = []
@@ -551,4 +679,3 @@ def get_technical(
     base["trend_outlook"] = _directional_outlook(base, patterns, close)
     base["performance_note"] = "V7 technicals reuse validated/sanitized cached OHLC; 5Y backtests load only on demand. The 1D horizon participates in multi-timeframe analysis."
     return base
-
