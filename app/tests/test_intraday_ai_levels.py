@@ -42,16 +42,17 @@ def test_intraday_ai_selects_validated_target_stop_and_candle(monkeypatch):
         "setup_direction": "BULLISH",
         "target_candidate_id": "technical_target",
         "stop_candidate_id": "risk_control",
-        "next_candle_candidate_id": "historical_pattern_analog",
+        "next_candle": {"open": 100.0, "high": 101.2, "low": 99.6, "close": 100.8},
         "next_candle_confidence": "medium",
         "level_rationale": "Validated test levels",
         "candle_rationale": "Validated test candle",
     })
     result = intraday.get_intraday_ai("TEST", "IN", "5m", force_refresh=True)
+    assert result["ai_available"] is True
     assert result["level_source"] == "ai_selected"
     assert result["target"] == 103.0
     assert result["risk_control"] == 98.0
-    assert result["next_candle_prediction"]["source"] == "ai_selected"
+    assert result["next_candle_prediction"]["source"] == "ai_generated"
     assert result["next_candle_prediction"]["direction"] == "BULLISH"
     assert result["next_candle_prediction"]["confidence"] == "medium"
 
@@ -70,10 +71,26 @@ def test_intraday_invalid_ai_choices_use_validated_fallback(monkeypatch):
         "setup_direction": "BULLISH",
         "target_candidate_id": "opening_range_low",
         "stop_candidate_id": "opening_range_high",
-        "next_candle_candidate_id": "missing_candidate",
+        "next_candle": {"open": 100.0, "high": 90.0, "low": 110.0, "close": 100.5},
     })
     result = intraday.get_intraday_ai("TEST", "IN", "5m", force_refresh=True)
     assert result["level_source"] == "deterministic_fallback"
     assert result["target"] == core["technical_target"]
     assert result["risk_control"] == core["risk_control"]
     assert result["next_candle_prediction"]["source"] == "validated_fallback"
+
+
+def test_intraday_ai_failure_is_explicitly_marked_unavailable(monkeypatch):
+    core = _core()
+    monkeypatch.setattr(intraday, "get_intraday_analysis", lambda *a, **k: core)
+    monkeypatch.setattr(intraday, "get_json", lambda *a, **k: None)
+    monkeypatch.setattr(intraday, "set_json", lambda *a, **k: None)
+
+    def fail(_payload):
+        raise RuntimeError("AI endpoint offline")
+
+    monkeypatch.setattr(intraday, "synthesize_intraday_decision", fail)
+    result = intraday.get_intraday_ai("TEST", "IN", "5m", force_refresh=True)
+    assert result["ai_available"] is False
+    assert result["level_source"] == "deterministic_fallback"
+    assert "AI unavailable" in result["ai"]["summary"]

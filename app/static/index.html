@@ -5,7 +5,7 @@
   <title>Stock AI Agent V8.2</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/static/styles.css?v=8.2.9">
+  <link rel="stylesheet" href="/static/styles.css?v=8.2.16">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script>
 </head>
@@ -54,12 +54,13 @@
     <div class="dashboard-grid">
       <div class="main-column">
         <div class="glass-panel chart-container candle-panel">
-          <div class="section-heading chart-heading"><div><h3>Price & Candlestick Analysis</h3><p class="text-muted text-sm">Toggle line/candles and timeframe. The projected next candle uses historical pattern analogs; AI target and stop levels appear after the Technical Decision loads.</p></div>
+          <div class="section-heading chart-heading"><div><h3>Price & Candlestick Analysis</h3><p class="text-muted text-sm">When AI is available it generates the projected next candle from recent price evidence; otherwise the validated historical-pattern fallback is shown.</p></div>
             <div class="chart-controls">
+              <span id="candle-ai-state" class="quality-badge checking"><i class="fa-solid fa-circle-notch"></i> AI waiting</span>
               <div id="chart-type-toggle" class="segmented-control"><button type="button" class="segment-btn active" data-chart-type="candlestick">Candles</button><button type="button" class="segment-btn" data-chart-type="line">Line</button></div>
               <div id="chart-period-toggle" class="segmented-control timeframe-control"><button type="button" class="segment-btn" data-period="1d">1D</button><button type="button" class="segment-btn" data-period="5d">1W</button><button type="button" class="segment-btn" data-period="1mo">1M</button><button type="button" class="segment-btn active" data-period="3mo">3M</button><button type="button" class="segment-btn" data-period="6mo">6M</button><button type="button" class="segment-btn" data-period="1y">1Y</button></div>
             </div>
-          </div><div id="chart-data-meta" class="chart-data-meta">Waiting for chart data…</div><div id="candlestick-chart" class="plotly-chart"></div>
+          </div><div id="chart-data-meta" class="chart-data-meta">Waiting for chart data…</div><div id="candlestick-chart" class="plotly-chart"></div><div id="chart-pattern-insight" class="chart-pattern-insight"><div><span>Detected chart pattern</span><b id="chart-pattern-name">Analyzing structure…</b><small id="chart-pattern-note">Trendlines appear after enough validated price history loads.</small></div><div><span>AI future trend</span><b id="chart-future-trend">Waiting for AI…</b><small id="chart-future-note">A dotted projection will appear when the AI returns a valid bounded path.</small></div></div>
         </div>
 
         <div class="glass-panel trend-card">
@@ -139,7 +140,7 @@
         </div>
 
         <div class="glass-panel ai-thesis-card">
-          <div class="ai-header"><div><h3><i class="fa-solid fa-robot"></i> Nemotron Synthesis</h3><small id="ai-load-state" class="text-muted">Loads after deterministic analysis so the page appears faster.</small></div><span id="ai-confidence" class="badge">Confidence: --</span></div>
+          <div class="ai-header"><div><h3><i class="fa-solid fa-robot"></i> Nemotron Synthesis</h3><small id="ai-load-state" class="text-muted">Loads after deterministic analysis so the page appears faster.</small></div><div class="inline-actions ai-status-actions"><span id="stock-ai-state" class="quality-badge checking"><i class="fa-solid fa-circle-notch"></i> AI waiting</span><span id="ai-confidence" class="badge">Confidence: --</span></div></div>
           <div class="rating-banner"><div class="rating-label">AI Rating</div><div id="ai-rating" class="rating-value">--</div></div><p id="ai-thesis-text" class="thesis-text">--</p>
           <div class="ai-details-grid"><div class="ai-list positives"><h4><i class="fa-solid fa-circle-check"></i> Positives</h4><ul id="ai-positives-list"></ul></div><div class="ai-list risks"><h4><i class="fa-solid fa-triangle-exclamation"></i> Risks</h4><ul id="ai-risks-list"></ul></div></div>
         </div>
@@ -156,7 +157,8 @@
         </div>
 
         <div class="glass-panel">
-          <div class="section-heading"><div><h3><i class="fa-solid fa-clock-rotate-left"></i> AI Decision Track Record</h3><p class="text-muted text-sm">Stored technical calls, including their original AI target and stop-loss, are audited against subsequent price movement.</p></div><button id="recommendation-refresh" class="glass-btn">Refresh</button></div>
+          <div class="section-heading recommendation-heading"><div><h3><i class="fa-solid fa-clock-rotate-left"></i> AI Decision Track Record</h3><p class="text-muted text-sm">Stored technical calls, including their original AI target and stop-loss, are audited against subsequent price movement.</p></div><div class="inline-actions recommendation-actions"><button id="recommendation-export" class="glass-btn" type="button" disabled title="Export loaded AI decision history as CSV"><i class="fa-solid fa-file-csv"></i> Export CSV</button><button id="recommendation-import" class="glass-btn" type="button" title="Import a previously exported AI decision CSV"><i class="fa-solid fa-file-import"></i> Import CSV</button><button id="recommendation-refresh" class="glass-btn" type="button"><i class="fa-solid fa-rotate"></i> Refresh</button></div></div>
+          <input id="recommendation-import-file" class="hidden" type="file" accept=".csv,text/csv"><p id="recommendation-import-status" class="import-status text-sm" role="status" aria-live="polite"></p>
           <div id="recommendation-summary" class="diagnostic-grid"></div><div id="recommendation-history" class="table-wrap"><p class="text-muted text-sm">History builds as V8 technical decisions are requested.</p></div>
         </div>
       </div>
@@ -219,7 +221,7 @@
   <div id="intraday-results" class="hidden">
     <div class="intraday-hero surface-card"><div><span class="eyebrow">Live/session research</span><h2 id="intraday-name">--</h2><p id="intraday-session-meta">--</p></div><div class="intraday-price"><strong id="intraday-price">--</strong><span id="intraday-bias" class="bias-chip neutral">--</span></div></div>
     <div class="dashboard-grid"><div class="main-column">
-      <div class="surface-card chart-container intraday-chart-card"><div class="section-heading"><div><h3>Intraday Candles</h3><p class="text-muted text-sm">Latest exchange session plus Nemotron-selected next candle, target and stop-loss.</p></div></div><div id="intraday-chart-meta" class="chart-data-meta">AI projection loads after session data.</div><div id="intraday-chart" class="plotly-chart"></div></div>
+      <div class="surface-card chart-container intraday-chart-card"><div class="section-heading"><div><h3>Intraday Candles</h3><p class="text-muted text-sm">Latest exchange session plus Nemotron-selected next candle, target and stop-loss.</p></div><span id="intraday-candle-ai-state" class="quality-badge checking"><i class="fa-solid fa-circle-notch"></i> AI waiting</span></div><div id="intraday-chart-meta" class="chart-data-meta">AI projection loads after session data.</div><div id="intraday-chart" class="plotly-chart"></div></div>
       <div class="surface-card">
         <div class="section-heading"><div><h3>Session Decision</h3><p class="text-muted text-sm">Deterministic session structure first; Nemotron synthesis loads separately.</p></div><span id="intraday-ai-state" class="quality-badge checking">Waiting</span></div>
         <div class="decision-grid intraday-decision-grid">
@@ -370,7 +372,7 @@
   <div class="page-intro"><div><span class="eyebrow">Pre-listing research</span><h2>IPO Research Desk</h2><p>Official/public issue facts, filing links and conservative AI classification before listing. No GMP is used.</p></div></div>
   <div class="surface-card"><div class="section-heading"><div><h3>Current & Upcoming Issues</h3><p class="text-muted text-sm">India uses NSE issue feeds + SEBI filings. US uses Nasdaq IPO calendar data. Availability depends on source access.</p></div><div class="inline-actions"><select id="ipo-market" class="glass-input"><option value="IN">🇮🇳 India</option><option value="US">🇺🇸 US</option></select><input id="ipo-month" type="month" class="glass-input hidden"><button id="ipo-refresh" class="glass-btn primary">Refresh</button></div></div><div class="ipo-toolbar"><input id="ipo-search" class="glass-input" placeholder="Search IPO name or symbol"><div class="text-muted text-sm" id="ipo-count">Type to filter current issues.</div></div><div id="ipo-source-note" class="data-source-note"></div><div id="ipo-loading" class="loading-state hidden"><div class="spinner"></div><p>Loading IPO calendar…</p></div><div id="ipo-list" class="ipo-grid"></div></div>
   <div id="ipo-detail" class="hidden ipo-detail-layout">
-    <div class="surface-card"><div class="section-heading"><div><span class="eyebrow">Selected issue</span><h2 id="ipo-name">--</h2><p id="ipo-meta" class="text-muted">--</p></div><span id="ipo-verdict" class="ipo-verdict watch">WATCH</span></div><div class="research-summary-grid"><div class="mini-kpi"><span>Research score</span><b id="ipo-score">--</b><small id="ipo-completeness">--</small></div><div class="mini-kpi"><span>Price band</span><b id="ipo-price-band">--</b><small>Official feed when available</small></div><div class="mini-kpi"><span>Subscription</span><b id="ipo-subscription">--</b><small>Total demand where available</small></div><div class="mini-kpi"><span>Issue window</span><b id="ipo-window">--</b><small id="ipo-listing">--</small></div></div><h3>AI Pre-listing View</h3><p id="ipo-thesis" class="thesis-text">--</p><div class="ai-details-grid"><div class="ai-list positives"><h4>Positives</h4><ul id="ipo-positives"></ul></div><div class="ai-list risks"><h4>Risks / gaps</h4><ul id="ipo-risks"></ul></div></div><div><h4>Due diligence before applying</h4><ul id="ipo-due-diligence" class="compact-list"></ul></div><div id="ipo-filings" class="filing-list"></div><p class="text-muted text-sm">SUBSCRIBE/WATCH/AVOID is non-personalized research, not a guarantee of allotment, listing gain or profit.</p></div>
+    <div class="surface-card"><div class="section-heading"><div><span class="eyebrow">Selected issue</span><h2 id="ipo-name">--</h2><p id="ipo-meta" class="text-muted">--</p></div><span id="ipo-verdict" class="ipo-verdict watch">WATCH</span></div><div class="research-summary-grid"><div class="mini-kpi"><span>Research score</span><b id="ipo-score">--</b><small id="ipo-completeness">--</small></div><div class="mini-kpi"><span>Price band</span><b id="ipo-price-band">--</b><small>Official feed when available</small></div><div class="mini-kpi"><span>Subscription</span><b id="ipo-subscription">--</b><small>Total demand where available</small></div><div class="mini-kpi"><span>Issue window</span><b id="ipo-window">--</b><small id="ipo-listing">--</small></div></div><div class="section-heading ai-section-heading"><h3>AI Pre-listing View</h3><span id="ipo-ai-state" class="quality-badge checking"><i class="fa-solid fa-circle-notch"></i> AI waiting</span></div><p id="ipo-thesis" class="thesis-text">--</p><div class="ai-details-grid"><div class="ai-list positives"><h4>Positives</h4><ul id="ipo-positives"></ul></div><div class="ai-list risks"><h4>Risks / gaps</h4><ul id="ipo-risks"></ul></div></div><div><h4>Due diligence before applying</h4><ul id="ipo-due-diligence" class="compact-list"></ul></div><div id="ipo-filings" class="filing-list"></div><p class="text-muted text-sm">SUBSCRIBE/WATCH/AVOID is non-personalized research, not a guarantee of allotment, listing gain or profit.</p></div>
   </div>
 </section>
 
@@ -385,7 +387,7 @@
 </section>
 
 <section id="tab-watchlist" class="tab-pane hidden fade-in">
-  <div class="glass-panel"><div class="section-heading"><div><h2><i class="fa-regular fa-star"></i> Watchlist & Signal Alerts</h2><p class="text-muted">Saved locally in your browser. Check RSI, price levels, volume, breakouts/breakdowns and near-term company events.</p></div><button id="watch-check" class="glass-btn primary">Check now</button></div><div id="watchlist-items" class="watchlist-grid"></div></div>
+  <div class="glass-panel"><div class="section-heading watchlist-heading"><div><h2><i class="fa-regular fa-star"></i> Watchlist & Signal Alerts</h2><p class="text-muted">Saved locally in your browser. Check RSI, price levels, volume, breakouts/breakdowns and near-term company events.</p></div><div class="inline-actions watchlist-actions"><button id="watch-export" class="glass-btn" type="button" disabled title="Export watchlist as CSV"><i class="fa-solid fa-file-csv"></i> Export CSV</button><button id="watch-import" class="glass-btn" type="button" title="Import and merge a watchlist CSV"><i class="fa-solid fa-file-import"></i> Import CSV</button><button id="watch-check" class="glass-btn primary" type="button"><i class="fa-solid fa-bell"></i> Check now</button></div></div><input id="watch-import-file" class="hidden" type="file" accept=".csv,text/csv"><p id="watch-import-status" class="import-status text-sm" role="status" aria-live="polite"></p><div id="watchlist-items" class="watchlist-grid"></div></div>
   <div id="watch-loading" class="loading-state hidden"><div class="spinner"></div><p>Checking watchlist...</p></div><div id="watch-results" class="glass-panel hidden"><h3>Triggered Alerts</h3><div id="watch-alerts"></div></div>
 </section>
 
@@ -394,11 +396,11 @@
 
 <button id="chat-fab" class="chat-fab" aria-label="Open V8 assistant"><i class="fa-solid fa-message"></i><span>Ask V8</span></button>
 <aside id="chat-panel" class="chat-panel hidden" aria-label="V8 research assistant">
-  <div class="chat-panel-header"><div><b><i class="fa-solid fa-sparkles"></i> V8 Assistant</b><small>Ask about the app, indicators or the stock/fund you are viewing.</small></div><button id="chat-close" class="icon-btn"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="chat-panel-header"><div><b><i class="fa-solid fa-sparkles"></i> V8 Assistant</b><small>Ask about the app, indicators or the stock/fund you are viewing.</small><span id="chat-ai-state" class="quality-badge single"><i class="fa-solid fa-circle-info"></i> AI status not checked</span></div><button id="chat-close" class="icon-btn"><i class="fa-solid fa-xmark"></i></button></div>
   <div id="chat-messages" class="chat-messages"><div class="chat-message bot">Hi — ask me what a metric means, how to use a feature, or to explain the current analysis.</div></div>
   <div id="chat-context" class="chat-context">Context: General help</div>
   <form id="chat-form" class="chat-form"><textarea id="chat-input" class="glass-input" rows="2" placeholder="e.g. Why is this stock HOLD on 1M?"></textarea><button id="chat-send" class="glass-btn primary chat-send-btn" type="submit" aria-label="Send message"><i class="fa-solid fa-paper-plane"></i><span>Send</span></button></form>
 </aside>
 <div id="explain-modal" class="modal hidden"><div class="modal-card glass-panel"><button id="explain-close" class="icon-btn modal-close"><i class="fa-solid fa-xmark"></i></button><h3 id="explain-title">Metric</h3><div id="explain-body" class="modal-body"></div></div></div>
-<script src="/static/app.js?v=8.2.8"></script>
+<script src="/static/app.js?v=8.2.13"></script>
 </body></html>

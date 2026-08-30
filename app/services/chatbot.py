@@ -29,10 +29,12 @@ def ask_assistant(message:str, context_type:str="GENERAL", symbol:str|None=None,
             i=analyze_ipo(identifier,market)
             context["ipo"]={"issue":i.get("issue"),"research_score":i.get("research_score"),"ai_analysis":i.get("ai_analysis"),"official_filings":i.get("official_filings")}
         except Exception as exc:context["context_error"]=str(exc)[:160]
+    ai_available=True
     try:
         answer=synthesize_chat({"question":message,"context":context})
         text=answer.get("answer") or "I could not generate an answer."; follow=answer.get("follow_ups",[])
     except Exception:
+        ai_available=False
         q=message.lower(); glossary={
             "rsi":"RSI is a 0–100 momentum oscillator. V8 treats roughly 45–65 as constructive context; extreme readings can persist and are not standalone buy/sell signals.",
             "support":"Support is a price area where demand previously appeared. V8 uses zones and recalculates them by horizon; a support level can fail.",
@@ -41,4 +43,4 @@ def ask_assistant(message:str, context_type:str="GENERAL", symbol:str|None=None,
             "vwap":"VWAP is a volume-weighted average price. Intraday V8 compares current price with session VWAP as one participation/context signal.",
             "ipo":"The IPO desk uses SUBSCRIBE/WATCH/AVOID research classifications. It does not guarantee listing gains and does not treat GMP as verified evidence.",
         };text=next((v for k,v in glossary.items() if k in q),"The AI service is unavailable right now. You can still use V8's deterministic metrics, data-quality panels, screeners, backtests and explain buttons.");follow=[]
-    return {"answer":text,"follow_ups":follow,"context_type":context_type,"disclaimer":"Educational/research assistance only; not personalized investment advice."}
+    return {"answer":text,"follow_ups":follow,"context_type":context_type,"ai_available":ai_available,"disclaimer":"Educational/research assistance only; not personalized investment advice."}

@@ -141,8 +141,9 @@ def analyze_ipo(identifier:str,market:str="IN",force_refresh:bool=False)->dict:
         name_words=[w for w in re.findall(r"[A-Z0-9]+",str(issue.get("name","")).upper()) if len(w)>3]
         if any(w in f.get("title","").upper() for w in name_words[:3]):related.append(f)
     evidence={"issue":{k:v for k,v in issue.items() if k!="raw"},"score":score,"official_filings":related[:5],"source_notes":listed.get("sources",[])}
+    ai_available=True
     try:ai=synthesize_ipo_analysis(evidence)
-    except Exception as exc:ai={"verdict":score["verdict"],"confidence":"low","thesis":"AI IPO synthesis unavailable; deterministic evidence score shown.","positives":[],"risks":[str(exc)[:160]],"due_diligence":["Read the RHP/SEC registration statement before applying."]}
+    except Exception as exc:ai_available=False;ai={"verdict":score["verdict"],"confidence":"low","thesis":"AI IPO synthesis unavailable; deterministic evidence score shown.","positives":[],"risks":[str(exc)[:160]],"due_diligence":["Read the RHP/SEC registration statement before applying."]}
     # Never let AI become more aggressive than the evidence when evidence is thin.
     if score["evidence_completeness_pct"]<50 and str(ai.get("verdict","")).upper()=="SUBSCRIBE":ai["verdict"]="WATCH"
-    result={"market":market,"issue":issue,"research_score":score,"ai_analysis":ai,"official_filings":related[:5],"as_of":datetime.now(timezone.utc).isoformat(),"disclaimer":"Pre-listing IPO research is highly uncertain. SUBSCRIBE/WATCH/AVOID is a non-personalized research classification, not a guarantee of allotment, listing gain or profit. No GMP is used."};set_json(key,result,ttl=600);return result
+    result={"market":market,"issue":issue,"research_score":score,"ai_analysis":ai,"ai_available":ai_available,"official_filings":related[:5],"as_of":datetime.now(timezone.utc).isoformat(),"disclaimer":"Pre-listing IPO research is highly uncertain. SUBSCRIBE/WATCH/AVOID is a non-personalized research classification, not a guarantee of allotment, listing gain or profit. No GMP is used."};set_json(key,result,ttl=600);return result

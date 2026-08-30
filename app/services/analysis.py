@@ -183,16 +183,18 @@ def get_stock_ai(symbol: str, market: str | None = None, force_refresh: bool = F
     evidence["news"] = context.get("news", [])
     evidence["events"] = context.get("events", {})
     det = core["deterministic_rating"]
+    ai_available = True
     try:
         ai = synthesize(evidence)
     except Exception as exc:
+        ai_available = False
         ai = {
             "rating": det, "confidence": "low",
             "thesis": "AI synthesis unavailable; deterministic scores are shown.",
             "positives": [], "risks": [f"AI synthesis error: {str(exc)[:180]}"],
             "catalysts": [], "what_to_watch": [],
         }
-    result = {"symbol": symbol, "market": resolved, "ai_analysis": ai, "cache": "miss"}
+    result = {"symbol": symbol, "market": resolved, "ai_analysis": ai, "ai_available": ai_available, "cache": "miss"}
     set_json(key, result, ttl=settings.ai_cache_ttl_seconds)
     save_analysis(symbol, core["scores"]["overall"], ai.get("rating", det), {**core, "ai_analysis": ai})
     return result

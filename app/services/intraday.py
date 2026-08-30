@@ -99,11 +99,17 @@ def _resolve_ai_levels(core:dict,ai:dict,candidates:list[dict])->dict:
 
 
 def _resolve_ai_candle(core:dict,ai:dict,candidates:list[dict])->dict|None:
-    by_id={item["id"]:item for item in candidates};selected=by_id.get(str(ai.get("next_candle_candidate_id") or ""));source="ai_selected"
-    if selected is None:
-        selected=by_id.get("historical_pattern_analog") or next(iter(candidates),None);source="validated_fallback"
-    if selected is None:return None
-    result=dict(selected);result["source"]=source;result["confidence"]=str(ai.get("next_candle_confidence") or ai.get("confidence") or "low").lower();result["rationale"]=str(ai.get("candle_rationale") or selected.get("basis") or "Validated intraday scenario.");result["note"]="Nemotron selected this bounded next-candle scenario from validated session candidates; it is not a guaranteed forecast."
+    by_id={item["id"]:item for item in candidates};fallback=by_id.get("historical_pattern_analog") or next(iter(candidates),None);generated=ai.get("next_candle") or {}
+    if candidates and isinstance(generated,dict):
+        values=[_finite(generated.get(name),4) for name in ("open","high","low","close")]
+        floor=min(float(item["low"]) for item in candidates);ceiling=max(float(item["high"]) for item in candidates)
+        if all(value is not None and value>0 and floor<=value<=ceiling for value in values):
+            op,hi,lo,cl=values
+            if hi>=max(op,cl) and lo<=min(op,cl) and hi>lo:
+                body=abs(cl/op-1)*100 if op else 0;direction="NEUTRAL" if body<.02 else "BULLISH" if cl>op else "BEARISH"
+                return {"date":candidates[0]["date"],"open":op,"high":hi,"low":lo,"close":cl,"direction":direction,"source":"ai_generated","confidence":str(ai.get("next_candle_confidence") or ai.get("confidence") or "low").lower(),"rationale":str(ai.get("candle_rationale") or "AI-generated bounded intraday candle."),"note":"AI-generated bounded next-candle scenario; it is not a guaranteed forecast."}
+    if fallback is None:return None
+    result=dict(fallback);result["source"]="validated_fallback";result["confidence"]=str(ai.get("next_candle_confidence") or ai.get("confidence") or "low").lower();result["rationale"]=str(ai.get("candle_rationale") or fallback.get("basis") or "Validated intraday scenario.");result["note"]="AI candle generation was unavailable or invalid; a validated bounded fallback is shown."
     return result
 
 
@@ -137,12 +143,14 @@ def get_intraday_analysis(symbol:str,market:str="IN",interval:str="5m",force_ref
 
 
 def get_intraday_ai(symbol:str,market:str="IN",interval:str="5m",force_refresh:bool=False)->dict:
-    core=get_intraday_analysis(symbol,market,interval,force_refresh);key=f"intraday:v9:ai:{market}:{symbol}:{interval}"
+    core=get_intraday_analysis(symbol,market,interval,force_refresh);key=f"intraday:v10:ai:{market}:{symbol}:{interval}"
     if not force_refresh:
         c=get_json(key)
         if c:return c
     level_candidates=_intraday_level_candidates(core);candle_candidates=_intraday_candle_candidates(core);payload={k:v for k,v in core.items() if k not in {"bars","quote_validation"}};payload["level_candidates"]=level_candidates;payload["candle_candidates"]=candle_candidates
+    if candle_candidates:payload["candle_bounds"]={"min_price":min(float(item["low"]) for item in candle_candidates),"max_price":max(float(item["high"]) for item in candle_candidates)}
+    ai_available=True
     try:ai=synthesize_intraday_decision(payload)
-    except Exception as exc:ai={"recommendation":core["deterministic_action"],"confidence":"low","summary":"AI unavailable; deterministic intraday signal shown.","confirming_signals":[],"risks":[str(exc)[:160]],"setup_direction":core.get("bias")}
+    except Exception as exc:ai_available=False;ai={"recommendation":core["deterministic_action"],"confidence":"low","summary":"AI unavailable; deterministic intraday signal shown.","confirming_signals":[],"risks":[str(exc)[:160]],"setup_direction":core.get("bias")}
     levels=_resolve_ai_levels(core,ai,level_candidates);prediction=_resolve_ai_candle(core,ai,candle_candidates)
-    result={"symbol":symbol.upper(),"market":market.upper(),"interval":interval,"deterministic":core["deterministic_action"],"ai":ai,**levels,"next_candle_prediction":prediction,"note":"Nemotron selects target, stop-loss and a bounded next-candle scenario from validated current-session candidates. These are estimates, not guaranteed executable levels or forecasts."};set_json(key,result,ttl=300);return result
+    result={"symbol":symbol.upper(),"market":market.upper(),"interval":interval,"deterministic":core["deterministic_action"],"ai":ai,"ai_available":ai_available,**levels,"next_candle_prediction":prediction,"note":"Nemotron selects target, stop-loss and a bounded next-candle scenario from validated current-session candidates. These are estimates, not guaranteed executable levels or forecasts."};set_json(key,result,ttl=300);return result

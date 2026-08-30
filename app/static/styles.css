@@ -1077,7 +1077,30 @@ body{background:var(--bg-primary);}
 
 /* V8.1 targeted UI fixes */
 .glass-btn.primary, .glass-btn.primary i, .glass-btn.primary span { color: #ffffff !important; }
+.glass-btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none!important}
+.recommendation-heading,.watchlist-heading{align-items:flex-start}.recommendation-heading>div:first-child,.watchlist-heading>div:first-child{flex:1;min-width:0}.recommendation-actions,.watchlist-actions{flex:0 0 auto;flex-wrap:nowrap;justify-content:flex-end}.recommendation-actions .glass-btn,.watchlist-actions .glass-btn{justify-content:center;white-space:nowrap}.import-status{min-height:20px;margin:-2px 0 12px;color:var(--text-muted)}.import-status:empty{display:none}.import-status.success{color:var(--positive)}.import-status.error{color:var(--negative)}
+.ai-status-actions{align-items:center;flex-wrap:wrap;justify-content:flex-end}.ai-section-heading{align-items:center;margin:18px 0 0}.ai-section-heading h3{margin:0}.quality-badge.bad{border-color:rgba(239,68,68,.38);font-weight:800}#chat-ai-state{margin-top:8px;font-size:.62rem}
+.candle-panel{height:auto!important}.chart-pattern-insight{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.chart-pattern-insight>div{min-width:0;padding:11px 13px;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-secondary)}.chart-pattern-insight span{display:block;margin-bottom:4px;color:var(--text-secondary);font-size:.68rem;font-weight:750;text-transform:uppercase;letter-spacing:.045em}.chart-pattern-insight b{display:block;color:var(--text-primary);font-size:.82rem}.chart-pattern-insight small{display:block;margin-top:4px;color:var(--text-secondary);font-size:.68rem;line-height:1.45}
 [data-theme="light"] .glass-btn.primary{background:var(--primary-color)!important;border-color:var(--primary-color)!important;color:#fff!important;}
+@media(max-width:760px){.recommendation-heading,.watchlist-heading{align-items:stretch;flex-direction:column}.recommendation-actions,.watchlist-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}.recommendation-actions .glass-btn,.watchlist-actions .glass-btn{width:100%}}
+@media(max-width:480px){.recommendation-actions,.watchlist-actions{grid-template-columns:1fr}}
+@media(max-width:650px){.ai-header{align-items:flex-start;gap:10px}.ai-status-actions{justify-content:flex-start;width:100%}.ai-section-heading{align-items:flex-start}}
+@media(max-width:650px){.chart-pattern-insight{grid-template-columns:1fr}}
+
+/* Research Intelligence: keep tables from squeezing their companion panels. */
+.research-panel{padding:20px!important}
+.research-panel .research-summary-grid{gap:12px;margin:18px 0 20px}
+.research-detail-grid{grid-template-columns:minmax(0,1.65fr) minmax(270px,.75fr);gap:18px;align-items:start;margin-top:18px;padding-top:18px;border-top:1px solid var(--border-color)}
+.research-detail-grid>div{min-width:0;padding:14px;border:1px solid var(--border-color);border-radius:12px;background:var(--bg-secondary)}
+.research-detail-grid h4,.ownership-block h4{margin:0 0 12px;font-size:.92rem}
+.research-detail-grid .table-wrap{max-width:100%}
+.research-detail-grid .data-table{min-width:560px}
+.research-detail-grid .level-list{margin-top:0}
+.ownership-block{margin-top:18px;padding:16px;border:1px solid var(--border-color);border-radius:12px;background:var(--bg-secondary)}
+.ownership-block #ownership-summary{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:12px}
+.ownership-block #ownership-note{line-height:1.5;margin-top:10px}
+@media(max-width:1180px){.research-detail-grid{grid-template-columns:1fr}.research-detail-grid .data-table{min-width:600px}}
+@media(max-width:650px){.research-panel{padding:14px!important}.research-panel .research-summary-grid{grid-template-columns:1fr}.research-detail-grid>div,.ownership-block{padding:12px}.research-detail-grid .data-table{min-width:520px}.ownership-block #ownership-summary{grid-template-columns:1fr}}
 [data-theme="light"] .glass-btn.primary:hover{background:var(--primary-hover)!important;}
 
 .primary-nav .nav-btn[data-tab="stocks"] i{font-size:.88rem}

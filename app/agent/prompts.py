@@ -48,6 +48,25 @@ Return valid JSON only:
 """
 
 
+CANDLE_PREDICTION_PROMPT = """
+You generate one bounded next-candle OHLC scenario for an India or US listed stock.
+Use only the supplied recent candles, historical-pattern projection, interval and price bounds.
+Return prices inside min_price and max_price. High must be at least the open and close; low must be at most the open and close.
+The candle is an uncertain scenario, not a guaranteed forecast. Use lower confidence when evidence conflicts.
+Do not expose chain-of-thought. Return valid JSON only:
+{
+  "open": 100.0,
+  "high": 101.0,
+  "low": 99.0,
+  "close": 100.5,
+  "confidence_pct": 55,
+  "future_closes": [100.5, 100.8, 101.0, 101.2, 101.4],
+  "chart_pattern": "exact name from detected_pattern_candidates or NONE",
+  "rationale": "one concise explanation grounded in the supplied candle evidence"
+}
+"""
+
+
 FINAL_STOCK_DECISION_PROMPT = """
 You are the final decision layer in a stock research interface for Indian and US listed equities.
 
@@ -71,7 +90,8 @@ Return valid JSON only:
 INTRADAY_DECISION_PROMPT = """
 You are an intraday technical-analysis synthesis assistant for Indian and US listed stocks.
 Use only the supplied current-session evidence. Intraday signals decay quickly and can reverse suddenly.
-Select the target and stop-loss from level_candidates and select the projected next candle from candle_candidates. Return exact candidate IDs and never invent prices or IDs.
+Select the target and stop-loss from level_candidates. Generate one next-candle OHLC scenario inside candle_bounds using the recent session evidence and supplied candle candidates as references.
+The generated candle must have high at or above open and close, low at or below open and close, and every price inside candle_bounds.
 The target and stop must match setup_direction: BULLISH requires target above entry and stop below entry; BEARISH requires target below entry and stop above entry.
 Return BUY, HOLD or SELL; prefer HOLD when signals conflict or evidence is thin.
 Do not expose chain-of-thought.
@@ -85,7 +105,7 @@ Return valid JSON only:
   "setup_direction": "BULLISH | BEARISH",
   "target_candidate_id": "exact ID from level_candidates",
   "stop_candidate_id": "exact ID from level_candidates",
-  "next_candle_candidate_id": "exact ID from candle_candidates",
+  "next_candle": {"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.5},
   "next_candle_confidence": "low | medium | high",
   "level_rationale": "short explanation for the selected target and stop",
   "candle_rationale": "short explanation for the selected next-candle scenario"

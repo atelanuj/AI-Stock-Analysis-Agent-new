@@ -96,3 +96,50 @@ def list_technical_recommendations(symbol: str | None = None, market: str | None
         return [{k:(float(v) if k in {"technical_score","entry_price","target_low","target_high","risk_control","invalidation"} and v is not None else v.isoformat() if k=="created_at" and v is not None else v) for k,v in zip(cols,row)} for row in rows]
     except Exception:
         return []
+
+
+def import_technical_recommendations(items: list[dict]) -> dict:
+    imported = 0
+    skipped = 0
+    with psycopg.connect(settings.database_url) as conn:
+        with conn.cursor() as cur:
+            for item in items:
+                symbol = str(item["symbol"]).strip().upper()
+                market = str(item["market"]).strip().upper()
+                horizon = str(item["horizon"]).strip().upper()
+                recommendation = str(item["recommendation"]).strip().upper()
+                created_at = item.get("created_at")
+                entry = item.get("entry_price")
+                target = item.get("ai_target")
+                stop = item.get("ai_stop_loss")
+                if created_at is not None:
+                    cur.execute("""
+                        SELECT id FROM technical_recommendations
+                        WHERE symbol=%s AND market=%s AND horizon=%s AND recommendation=%s
+                          AND entry_price IS NOT DISTINCT FROM %s AND created_at=%s
+                        LIMIT 1
+                    """, (symbol, market, horizon, recommendation, entry, created_at))
+                else:
+                    cur.execute("""
+                        SELECT id FROM technical_recommendations
+                        WHERE symbol=%s AND market=%s AND horizon=%s AND recommendation=%s
+                          AND entry_price IS NOT DISTINCT FROM %s
+                          AND created_at > NOW() - INTERVAL '15 minutes'
+                        LIMIT 1
+                    """, (symbol, market, horizon, recommendation, entry))
+                if cur.fetchone():
+                    skipped += 1
+                    continue
+                payload = {"source": "csv_import", "imported_record": item}
+                cur.execute("""
+                    INSERT INTO technical_recommendations(
+                        symbol,market,horizon,recommendation,ai_recommendation,technical_score,
+                        entry_price,target_low,target_high,risk_control,invalidation,payload,created_at
+                    ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,COALESCE(%s,NOW()))
+                """, (
+                    symbol, market, horizon, recommendation, item.get("ai_recommendation"), item.get("technical_score"),
+                    entry, target, target, stop, stop, json.dumps(payload, default=str), created_at,
+                ))
+                imported += 1
+        conn.commit()
+    return {"imported": imported, "skipped": skipped, "total": len(items)}

@@ -287,9 +287,11 @@ def get_technical_ai_decision(symbol: str, market: str = "IN", horizon: str = "1
         "level_candidates": level_candidates,
     }
 
+    ai_available = True
     try:
         ai = synthesize_technical_decision(payload)
     except Exception as exc:
+        ai_available = False
         ai = {
             "recommendation": deterministic["deterministic_recommendation"],
             "confidence": "low",
@@ -328,6 +330,7 @@ def get_technical_ai_decision(symbol: str, market: str = "IN", horizon: str = "1
         "consensus": ai_recommendation == deterministic_recommendation,
         "setup": setup,
         "methodology": deterministic["methodology"],
+        "ai_available": ai_available,
         "cache": "miss",
         "disclaimer": "Technical research only. BUY/HOLD/SELL is not personalized financial advice. Nemotron selects target and stop-loss from validated technical candidates; these remain estimates, never confirmed future prices.",
     }

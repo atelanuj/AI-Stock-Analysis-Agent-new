@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 from pydantic import BaseModel, Field
 
@@ -84,6 +85,23 @@ class WatchItem(BaseModel):
 
 class WatchlistRequest(BaseModel):
     items: list[WatchItem] = Field(min_length=1, max_length=100)
+
+
+class RecommendationImportItem(BaseModel):
+    created_at: datetime | None = None
+    symbol: str = Field(min_length=1, max_length=32)
+    market: Market
+    horizon: Literal["1D", "1W", "1M", "3M", "6M", "1Y"]
+    recommendation: Literal["BUY", "HOLD", "SELL"]
+    ai_recommendation: Literal["BUY", "HOLD", "SELL"] | None = None
+    technical_score: float | None = Field(default=None, ge=0, le=100)
+    entry_price: float | None = Field(default=None, gt=0)
+    ai_target: float | None = Field(default=None, gt=0)
+    ai_stop_loss: float | None = Field(default=None, gt=0)
+
+
+class RecommendationImportRequest(BaseModel):
+    items: list[RecommendationImportItem] = Field(min_length=1, max_length=500)
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=2, max_length=2000)

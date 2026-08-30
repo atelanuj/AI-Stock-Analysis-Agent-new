@@ -6,8 +6,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.db.database import init_db
-from app.models.api import FundScreenRequest, PortfolioRequest, StockScreenRequest, WatchlistRequest, ChatRequest, FundOverlapRequest, StrategyBacktestRequest, FinalStockDecisionRequest
+from app.models.api import FundScreenRequest, PortfolioRequest, StockScreenRequest, WatchlistRequest, ChatRequest, FundOverlapRequest, StrategyBacktestRequest, FinalStockDecisionRequest, RecommendationImportRequest
 from app.services.analysis import analyze_stock, analyze_stock_core, analyze_stock_fast, get_stock_ai, get_stock_context
+from app.services.candle_prediction import get_ai_candle_prediction
 from app.services.backtesting import backtest_stock_strategy
 from app.services.fund_screening import screen_funds
 from app.services.mf_analysis import analyze_mutual_fund
@@ -25,7 +26,7 @@ from app.services.strategy_builder import backtest_custom_strategy
 from app.services.fund_intelligence import compare_fund_overlap, fund_category_context
 from app.services.market_overview import get_market_overview
 from app.services.portfolio_risk import portfolio_risk_analysis
-from app.db.database import list_technical_recommendations
+from app.db.database import import_technical_recommendations, list_technical_recommendations
 from app.services.recommendation_history import recommendation_performance
 from app.tools.market_data import get_price_history
 from app.tools.mutual_funds import search_indian_mf, search_us_funds
@@ -116,6 +117,11 @@ def candles(symbol:str,market:str="IN",period:str="6mo",interval:str="1d"):
             "data_source": "Yahoo Finance OHLC (sanitized; yfinance repair enabled)",
             "quality": "OK" if len(rows) >= (8 if period == "1d" else 2) else "LIMITED",
         }
+    except Exception as exc:raise HTTPException(status_code=500,detail=str(exc))
+
+@app.get("/api/candles/ai/{symbol}")
+def ai_candle_prediction(symbol:str,market:str="IN",period:str="3mo",interval:str="1d",force_refresh:bool=False):
+    try:return get_ai_candle_prediction(symbol,market,period,interval,force_refresh)
     except Exception as exc:raise HTTPException(status_code=500,detail=str(exc))
 
 @app.get("/api/history/{symbol}")
@@ -237,6 +243,11 @@ def strategy_backtest(request:StrategyBacktestRequest):
 @app.get("/recommendations/history")
 def recommendation_history(symbol:str|None=None, market:str|None=None, limit:int=50):
     return recommendation_performance(symbol,market,limit)
+
+@app.post("/recommendations/import")
+def recommendation_import(request:RecommendationImportRequest):
+    try:return import_technical_recommendations([item.model_dump(mode="json") for item in request.items])
+    except Exception as exc:raise HTTPException(status_code=500,detail=str(exc))
 
 @app.post("/funds/overlap")
 def fund_overlap(request:FundOverlapRequest):

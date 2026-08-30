@@ -1,7 +1,7 @@
 import json
 from openai import OpenAI
 from app.config import settings
-from app.agent.prompts import SYSTEM_PROMPT, TECHNICAL_DECISION_PROMPT, FINAL_STOCK_DECISION_PROMPT, INTRADAY_DECISION_PROMPT, IPO_ANALYSIS_PROMPT, CHAT_ASSISTANT_PROMPT
+from app.agent.prompts import SYSTEM_PROMPT, TECHNICAL_DECISION_PROMPT, CANDLE_PREDICTION_PROMPT, FINAL_STOCK_DECISION_PROMPT, INTRADAY_DECISION_PROMPT, IPO_ANALYSIS_PROMPT, CHAT_ASSISTANT_PROMPT
 
 client = OpenAI(
     base_url=settings.nvidia_base_url,
@@ -57,6 +57,13 @@ def synthesize_technical_decision(prompt_payload: dict) -> dict:
     )
 
 
+def synthesize_candle_prediction(prompt_payload: dict) -> dict:
+    return _complete(
+        CANDLE_PREDICTION_PROMPT,
+        "Generate one bounded next-candle OHLC scenario from this evidence. Return JSON only.\n\n" + json.dumps(prompt_payload, default=str),
+    )
+
+
 def synthesize_final_stock_decision(prompt_payload: dict) -> dict:
     return _complete(
         FINAL_STOCK_DECISION_PROMPT,
@@ -67,7 +74,7 @@ def synthesize_final_stock_decision(prompt_payload: dict) -> dict:
 def synthesize_intraday_decision(prompt_payload: dict) -> dict:
     return _complete(
         INTRADAY_DECISION_PROMPT,
-        "Evaluate the current-session evidence and select target, stop and next-candle candidate IDs. Return JSON only.\n\n" + json.dumps(prompt_payload, default=str),
+        "Evaluate the current-session evidence, select target/stop IDs and generate one bounded next candle. Return JSON only.\n\n" + json.dumps(prompt_payload, default=str),
     )
 
 def synthesize_ipo_analysis(prompt_payload: dict) -> dict:
