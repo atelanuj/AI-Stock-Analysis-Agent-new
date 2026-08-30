@@ -5,7 +5,7 @@
   <title>Stock AI Agent V8.2</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/static/styles.css?v=8.2.8">
+  <link rel="stylesheet" href="/static/styles.css?v=8.2.9">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script>
 </head>
@@ -156,7 +156,7 @@
         </div>
 
         <div class="glass-panel">
-          <div class="section-heading"><div><h3><i class="fa-solid fa-clock-rotate-left"></i> AI Decision Track Record</h3><p class="text-muted text-sm">Stored technical calls are audited against subsequent price movement so recommendations can be judged, not just displayed.</p></div><button id="recommendation-refresh" class="glass-btn">Refresh</button></div>
+          <div class="section-heading"><div><h3><i class="fa-solid fa-clock-rotate-left"></i> AI Decision Track Record</h3><p class="text-muted text-sm">Stored technical calls, including their original AI target and stop-loss, are audited against subsequent price movement.</p></div><button id="recommendation-refresh" class="glass-btn">Refresh</button></div>
           <div id="recommendation-summary" class="diagnostic-grid"></div><div id="recommendation-history" class="table-wrap"><p class="text-muted text-sm">History builds as V8 technical decisions are requested.</p></div>
         </div>
       </div>
@@ -327,22 +327,36 @@
   <div class="glass-panel">
     <div class="section-heading"><div><h2><i class="fa-solid fa-filter"></i> Global Screener V8.2</h2><p class="text-muted">Scan count controls how many candidates are evaluated. Result count controls how many matching rows are shown.</p></div></div>
     <div class="screener-controls v5-controls">
-      <select id="screen-asset" class="glass-input"><option value="STOCK">Stocks</option><option value="FUND">Mutual Funds / ETFs</option></select>
-      <select id="screen-market" class="glass-input"><option value="IN">🇮🇳 India</option><option value="US">🇺🇸 US</option></select>
-      <select id="screen-universe" class="glass-input"></select>
-      <select id="screen-scan-count" class="glass-input"><option>25</option><option selected>50</option><option>100</option><option>250</option><option>500</option></select>
-      <select id="screen-result-count" class="glass-input"><option>10</option><option>25</option><option selected>50</option><option>100</option><option>250</option><option>500</option></select>
-      <input id="screen-min-score" type="number" class="glass-input" value="50" min="0" max="100" placeholder="Min score">
-      <select id="screen-trend" class="glass-input"><option value="ANY">Any trend</option><option value="BULLISH">Bullish</option><option value="NEUTRAL">Neutral</option><option value="BEARISH">Bearish</option></select><select id="screen-horizon" class="glass-input"><option value="1D">1D trend</option><option value="1W">1W trend</option><option value="1M" selected>1M trend</option><option value="3M">3M trend</option><option value="6M">6M trend</option><option value="1Y">1Y trend</option></select>
-      <button id="screen-run" class="glass-btn primary"><i class="fa-solid fa-play"></i> Run Screener</button>
+      <label class="screener-field"><span class="filter-label">Asset type</span><select id="screen-asset" class="glass-input"><option value="STOCK">Stocks</option><option value="FUND">Mutual Funds / ETFs</option></select><small>Chooses which assets to scan and which advanced filters apply.</small></label>
+      <label class="screener-field"><span class="filter-label">Market</span><select id="screen-market" class="glass-input"><option value="IN">🇮🇳 India</option><option value="US">🇺🇸 US</option></select><small>Uses Indian or US securities, prices and preset universes.</small></label>
+      <label class="screener-field"><span class="filter-label">Stock universe</span><select id="screen-universe" class="glass-input"></select><small>Candidate list used when no custom stock symbols are entered.</small></label>
+      <label class="screener-field"><span class="filter-label">Scan count</span><select id="screen-scan-count" class="glass-input"><option>25</option><option selected>50</option><option>100</option><option>250</option><option>500</option></select><small>Maximum candidates evaluated before the filters are applied.</small></label>
+      <label class="screener-field"><span class="filter-label">Result count</span><select id="screen-result-count" class="glass-input"><option>10</option><option>25</option><option selected>50</option><option>100</option><option>250</option><option>500</option></select><small>Maximum matching rows displayed after filtering.</small></label>
+      <label class="screener-field"><span class="filter-label">Minimum score</span><input id="screen-min-score" type="number" class="glass-input" value="50" min="0" max="100" placeholder="Min score"><small>Only keeps assets with an overall research score at or above this 0–100 value.</small></label>
+      <label class="screener-field"><span class="filter-label">Trend direction</span><select id="screen-trend" class="glass-input"><option value="ANY">Any trend</option><option value="BULLISH">Bullish</option><option value="NEUTRAL">Neutral</option><option value="BEARISH">Bearish</option></select><small>For stocks, keeps only the selected directional bias.</small></label>
+      <label class="screener-field"><span class="filter-label">Trend timeframe</span><select id="screen-horizon" class="glass-input"><option value="1D">1D trend</option><option value="1W">1W trend</option><option value="1M" selected>1M trend</option><option value="3M">3M trend</option><option value="6M">6M trend</option><option value="1Y">1Y trend</option></select><small>Time horizon used to evaluate stock trend and breakout filters.</small></label>
+      <div class="screener-field screener-action"><span class="filter-label">Apply filters</span><button id="screen-run" class="glass-btn primary"><i class="fa-solid fa-play"></i> Run Screener</button><small>Evaluates candidates using all active filters below.</small></div>
     </div>
-    <textarea id="screen-input" class="glass-input screener-input" placeholder="Optional stock symbols, comma separated. Blank = selected universe."></textarea>
+    <label class="screener-field screener-symbol-field"><span class="filter-label">Custom candidates or fund search</span><textarea id="screen-input" class="glass-input screener-input" placeholder="Optional stock symbols, comma separated. Blank = selected universe."></textarea><small>Stocks: enter comma-separated symbols or leave blank for the universe. Funds: enter scheme codes/tickers or a search phrase.</small></label>
     <details class="advanced-filter"><summary>Advanced filters</summary>
       <div id="stock-filter-grid" class="filter-grid">
-        <label>Min Market Cap<input id="flt-mcap" type="number" class="glass-input" placeholder="e.g. 10000000000"></label><label>Max P/E<input id="flt-pe" type="number" class="glass-input" placeholder="30"></label><label>Min ROE %<input id="flt-roe" type="number" class="glass-input" placeholder="15"></label><label>Max Debt/Equity<input id="flt-debt" type="number" class="glass-input" placeholder="100"></label><label>Min Revenue Growth %<input id="flt-revg" type="number" class="glass-input" placeholder="10"></label><label>RSI Min<input id="flt-rsi-min" type="number" class="glass-input" placeholder="40"></label><label>RSI Max<input id="flt-rsi-max" type="number" class="glass-input" placeholder="65"></label><label class="check-label"><input id="flt-sma200" type="checkbox"> Price above SMA200</label><label class="check-label"><input id="flt-breakout" type="checkbox"> Confirmed volume breakout</label>
+        <label><span class="filter-label">Minimum market cap</span><input id="flt-mcap" type="number" class="glass-input" placeholder="e.g. 10000000000"><small>Excludes companies valued below this absolute amount in the market's local currency.</small></label>
+        <label><span class="filter-label">Maximum P/E</span><input id="flt-pe" type="number" class="glass-input" placeholder="30"><small>Caps trailing price-to-earnings; missing, negative or higher P/E values are excluded.</small></label>
+        <label><span class="filter-label">Minimum ROE %</span><input id="flt-roe" type="number" class="glass-input" placeholder="15"><small>Requires return on shareholder equity to meet this profitability threshold.</small></label>
+        <label><span class="filter-label">Maximum debt/equity</span><input id="flt-debt" type="number" class="glass-input" placeholder="100"><small>Limits financial leverage; 100 means debt is approximately equal to equity.</small></label>
+        <label><span class="filter-label">Minimum revenue growth %</span><input id="flt-revg" type="number" class="glass-input" placeholder="10"><small>Requires the provider's latest reported revenue growth to meet this rate.</small></label>
+        <label><span class="filter-label">Minimum RSI 14</span><input id="flt-rsi-min" type="number" class="glass-input" placeholder="40"><small>Rejects stocks whose 14-period momentum reading is below this value.</small></label>
+        <label><span class="filter-label">Maximum RSI 14</span><input id="flt-rsi-max" type="number" class="glass-input" placeholder="65"><small>Rejects stocks whose 14-period momentum reading is above this value.</small></label>
+        <label class="check-label"><span class="check-control"><input id="flt-sma200" type="checkbox"> <span>Price above SMA200</span></span><small>Keeps stocks trading above their 200-day moving average, a long-term trend filter.</small></label>
+        <label class="check-label"><span class="check-control"><input id="flt-breakout" type="checkbox"> <span>Confirmed volume breakout</span></span><small>Requires a price breakout confirmed by volume on the selected trend timeframe.</small></label>
       </div>
       <div id="fund-filter-grid" class="filter-grid hidden">
-        <label>Min 1Y return %<input id="ff-1y" type="number" class="glass-input"></label><label>Min 3Y annualized %<input id="ff-3y" type="number" class="glass-input"></label><label>Max drawdown magnitude %<input id="ff-mdd" type="number" class="glass-input" placeholder="30"></label><label>Max volatility %<input id="ff-vol" type="number" class="glass-input"></label><label>Max expense ratio %<input id="ff-exp" type="number" class="glass-input"></label><label>Min AUM<input id="ff-aum" type="number" class="glass-input"></label>
+        <label><span class="filter-label">Minimum 1Y return %</span><input id="ff-1y" type="number" class="glass-input"><small>Requires the fund's total return over the latest year to meet this percentage.</small></label>
+        <label><span class="filter-label">Minimum 3Y annualized return %</span><input id="ff-3y" type="number" class="glass-input"><small>Requires the fund's compounded yearly return over three years to meet this rate.</small></label>
+        <label><span class="filter-label">Maximum drawdown magnitude %</span><input id="ff-mdd" type="number" class="glass-input" placeholder="30"><small>Limits the worst historical peak-to-trough loss; enter a positive magnitude such as 30.</small></label>
+        <label><span class="filter-label">Maximum volatility %</span><input id="ff-vol" type="number" class="glass-input"><small>Excludes funds with annualized price variability above this percentage.</small></label>
+        <label><span class="filter-label">Maximum expense ratio %</span><input id="ff-exp" type="number" class="glass-input"><small>Caps the annual fund fee charged as a percentage of assets.</small></label>
+        <label><span class="filter-label">Minimum AUM</span><input id="ff-aum" type="number" class="glass-input"><small>Requires provider-reported assets under management to meet this absolute amount.</small></label>
       </div>
     </details>
     <p id="screen-help" class="text-muted text-sm"></p>

@@ -53,7 +53,7 @@ def test_chart_shows_projected_candle_and_ai_trade_levels():
     assert "AI stop" in JS
     assert 'fillcolor:\'rgba(168,85,247,.78)\'' in JS
     assert '/static/app.js?v=8.2.8' in HTML
-    assert '/static/styles.css?v=8.2.8' in HTML
+    assert '/static/styles.css?v=8.2.9' in HTML
     assert "hoverlabel:hoverStyle" in JS
     assert "hovermode:'x'" in JS
     assert "#candlestick-chart .hoverlayer text" in CSS

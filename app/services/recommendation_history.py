@@ -9,8 +9,14 @@ from app.db.database import list_technical_recommendations
 from app.tools.data_provider import get_history_df
 
 
+def _target_midpoint(row: dict) -> float | None:
+    values = [float(value) for value in (row.get("target_low"), row.get("target_high")) if value is not None]
+    return round(sum(values) / len(values), 4) if values else None
+
+
 def _evaluate(row:dict)->dict:
     out=dict(row)
+    out.update({"ai_target": _target_midpoint(row), "ai_stop_loss": row.get("risk_control")})
     try:
         hist=get_history_df(row["symbol"],row["market"],"1y","1d",True)
         if hist.empty:return out
