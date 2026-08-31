@@ -53,7 +53,7 @@ def test_chart_shows_projected_candle_and_ai_trade_levels():
     assert "AI target" in JS
     assert "AI stop" in JS
     assert 'fillcolor:\'rgba(168,85,247,.78)\'' in JS
-    assert '/static/app.js?v=8.2.17' in HTML
+    assert '/static/app.js?v=8.2.18' in HTML
     assert '/static/styles.css?v=8.2.21' in HTML
     assert "hoverlabel:hoverStyle" in JS
     assert "hovermode:'x'" in JS
@@ -127,6 +127,25 @@ def test_every_chart_has_an_accessible_fullscreen_control():
     assert "toggleChartFullscreen" in JS
     assert "chart-is-fullscreen" in JS
     assert ".chart-container.chart-container.chart-fullscreen" in CSS
+
+
+def test_stock_chart_uses_dense_tradingview_style_candle_intervals():
+    for marker in [
+        "'1d':{interval:'2m',fallback:'5m'",
+        "'5d':{interval:'15m',fallback:'30m'",
+        "'1mo':{interval:'60m',fallback:'1d'",
+        "'3mo':{interval:'60m',fallback:'1d'",
+        "fetchDenseCandles",
+        "type:'category'",
+    ]:
+        assert marker in JS
+    for title in [
+        'title="1 day with 2-minute candles"',
+        'title="1 week with 15-minute candles"',
+        'title="1 month with 1-hour candles"',
+        'title="3 months with 1-hour candles"',
+    ]:
+        assert title in HTML
 
 
 def test_final_ai_decision_is_prominent_and_waits_for_all_stock_evidence():
