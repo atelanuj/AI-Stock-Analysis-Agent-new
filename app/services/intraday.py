@@ -10,6 +10,7 @@ import pandas as pd
 from app.agent.client import synthesize_intraday_decision
 from app.cache.redis_cache import get_json, set_json
 from app.config import settings
+from app.services.candle_prediction import SUPPORTED_CHART_PATTERNS, detect_chart_patterns
 from app.tools.data_provider import get_history_df
 from app.tools.market_validation import get_validated_quote
 from app.tools.technical import predict_next_candle
@@ -138,12 +139,13 @@ def get_intraday_analysis(symbol:str,market:str="IN",interval:str="5m",force_ref
     else:target=price+atrv;stop=price-atrv
     quote=get_validated_quote(symbol,market,None,force_refresh)
     rows=_bars_from_frame(session);history_rows=_bars_from_frame(hist);pattern_projection=predict_next_candle(history_rows,interval)
-    result={"symbol":symbol,"market":market,"interval":interval,"bars":rows,"bar_count":len(rows),"price":_finite(quote.get("price") or price,4),"session":{"open":_finite(session_open,4),"high":_finite(session_high,4),"low":_finite(session_low,4),"change_pct":_finite((price/session_open-1)*100,2) if session_open else None},"indicators":{"vwap":_finite(vwap.iloc[-1],4),"ema9":_finite(ema9.iloc[-1],4),"ema21":_finite(ema21.iloc[-1],4),"rsi14":rv,"macd":_finite(macd.iloc[-1],4),"macd_signal":_finite(ms.iloc[-1],4),"bar_atr":_finite(atrv,4)},"opening_range":{"high":_finite(orb_high,4),"low":_finite(orb_low,4),"status":"ABOVE ORB" if price>orb_high else "BELOW ORB" if price<orb_low else "INSIDE ORB"},"bias":bias,"signal_agreement_pct":agreement,"deterministic_action":"BUY" if bias=="BULLISH" and agreement>=55 else "SELL" if bias=="BEARISH" and agreement>=55 else "HOLD","technical_target":_finite(target,4),"risk_control":_finite(stop,4),"next_candle_pattern_projection":pattern_projection,"quote_validation":quote,"note":"Intraday signals use exchange-session bars, VWAP, EMA9/21, RSI, MACD and opening-range structure. They are highly time-sensitive and not guaranteed."}
+    chart_patterns=detect_chart_patterns(rows if len(rows)>=15 else history_rows,window=48)
+    result={"symbol":symbol,"market":market,"interval":interval,"bars":rows,"bar_count":len(rows),"price":_finite(quote.get("price") or price,4),"session":{"open":_finite(session_open,4),"high":_finite(session_high,4),"low":_finite(session_low,4),"change_pct":_finite((price/session_open-1)*100,2) if session_open else None},"indicators":{"vwap":_finite(vwap.iloc[-1],4),"ema9":_finite(ema9.iloc[-1],4),"ema21":_finite(ema21.iloc[-1],4),"rsi14":rv,"macd":_finite(macd.iloc[-1],4),"macd_signal":_finite(ms.iloc[-1],4),"bar_atr":_finite(atrv,4)},"opening_range":{"high":_finite(orb_high,4),"low":_finite(orb_low,4),"status":"ABOVE ORB" if price>orb_high else "BELOW ORB" if price<orb_low else "INSIDE ORB"},"bias":bias,"signal_agreement_pct":agreement,"deterministic_action":"BUY" if bias=="BULLISH" and agreement>=55 else "SELL" if bias=="BEARISH" and agreement>=55 else "HOLD","technical_target":_finite(target,4),"risk_control":_finite(stop,4),"next_candle_pattern_projection":pattern_projection,"chart_patterns":chart_patterns,"selected_pattern":chart_patterns[0]["name"] if chart_patterns else "NONE","pattern_catalog":list(SUPPORTED_CHART_PATTERNS),"quote_validation":quote,"note":"Intraday signals use exchange-session bars, VWAP, EMA9/21, RSI, MACD, opening-range structure and the shared chart-pattern library. They are highly time-sensitive and not guaranteed."}
     set_json(key,result,ttl=settings.intraday_cache_ttl_seconds);return result
 
 
 def get_intraday_ai(symbol:str,market:str="IN",interval:str="5m",force_refresh:bool=False)->dict:
-    core=get_intraday_analysis(symbol,market,interval,force_refresh);key=f"intraday:v10:ai:{market}:{symbol}:{interval}"
+    core=get_intraday_analysis(symbol,market,interval,force_refresh);key=f"intraday:v11:ai:{market}:{symbol}:{interval}"
     if not force_refresh:
         c=get_json(key)
         if c:return c
@@ -153,4 +155,6 @@ def get_intraday_ai(symbol:str,market:str="IN",interval:str="5m",force_refresh:b
     try:ai=synthesize_intraday_decision(payload)
     except Exception as exc:ai_available=False;ai={"recommendation":core["deterministic_action"],"confidence":"low","summary":"AI unavailable; deterministic intraday signal shown.","confirming_signals":[],"risks":[str(exc)[:160]],"setup_direction":core.get("bias")}
     levels=_resolve_ai_levels(core,ai,level_candidates);prediction=_resolve_ai_candle(core,ai,candle_candidates)
-    result={"symbol":symbol.upper(),"market":market.upper(),"interval":interval,"deterministic":core["deterministic_action"],"ai":ai,"ai_available":ai_available,**levels,"next_candle_prediction":prediction,"note":"Nemotron selects target, stop-loss and a bounded next-candle scenario from validated current-session candidates. These are estimates, not guaranteed executable levels or forecasts."};set_json(key,result,ttl=300);return result
+    patterns=core.get("chart_patterns") or [];pattern_names={item["name"] for item in patterns};selected_pattern=str(ai.get("chart_pattern") or "NONE")
+    if selected_pattern not in pattern_names:selected_pattern=patterns[0]["name"] if patterns else "NONE"
+    result={"symbol":symbol.upper(),"market":market.upper(),"interval":interval,"deterministic":core["deterministic_action"],"ai":ai,"ai_available":ai_available,**levels,"next_candle_prediction":prediction,"chart_patterns":patterns,"selected_pattern":selected_pattern,"pattern_selection_source":"ai_selected" if ai_available and selected_pattern!="NONE" else "deterministic_fallback","pattern_catalog":core.get("pattern_catalog") or list(SUPPORTED_CHART_PATTERNS),"note":"Nemotron selects a validated chart-pattern candidate, target, stop-loss and bounded next-candle scenario from current-session evidence. These are estimates, not guaranteed executable levels or forecasts."};set_json(key,result,ttl=300);return result

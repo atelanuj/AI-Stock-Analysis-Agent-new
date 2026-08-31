@@ -1196,3 +1196,177 @@ body{background:var(--bg-primary);}
   .support-resistance-layout,.summary-card{grid-template-columns:1fr}
   .summary-legend{justify-content:flex-start}
 }
+
+/* ── Chart Layer Toggles ── */
+.chart-plot-wrapper {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.chart-overlay-toggles {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+  pointer-events: auto;
+}
+.chart-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background .2s, color .2s, border-color .2s, opacity .2s;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.chart-toggle-btn:hover {
+  opacity: 1;
+  background: var(--bg-secondary);
+}
+.chart-toggle-btn.active {
+  border-color: #a855f7;
+  color: #c084fc;
+  opacity: 1;
+  background: color-mix(in srgb, #a855f7 12%, var(--bg-primary));
+}
+.chart-toggle-btn.active:hover {
+  background: color-mix(in srgb, #a855f7 20%, var(--bg-primary));
+}
+.chart-toggle-btn i {
+  font-size: 0.68rem;
+}
+
+/* ── Fullscreen Chart Toggle ── */
+.chart-fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: rgba(255,255,255,.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background .2s, color .2s, border-color .2s, transform .15s;
+  flex-shrink: 0;
+}
+.chart-fullscreen-btn:hover {
+  background: rgba(255,255,255,.12);
+  color: var(--text-primary);
+  border-color: var(--primary-color);
+  transform: scale(1.08);
+}
+.chart-fullscreen-btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Fullscreen overlay — high specificity to override all chart sizing rules */
+.chart-container.chart-container.chart-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 9999 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  background: var(--bg-primary) !important;
+  overflow: hidden !important;
+  padding: 16px 24px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+  animation: chartFullscreenIn .22s ease-out;
+}
+
+/* Override the candle-panel specific rules */
+.candle-panel.chart-fullscreen {
+  min-height: 100vh !important;
+  height: 100vh !important;
+}
+
+.chart-container.chart-fullscreen .chart-plot-wrapper {
+  display: flex;
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+}
+
+/* Plotly charts: fill all remaining space */
+.chart-container.chart-fullscreen .plotly-chart,
+.chart-container.chart-fullscreen #candlestick-chart,
+.chart-container.chart-fullscreen #intraday-chart {
+  flex: 1 1 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+/* Chart.js canvases: fill all remaining space */
+.chart-container.chart-fullscreen canvas {
+  flex: 1 1 0 !important;
+  width: 100% !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+/* Compact the section heading in fullscreen */
+.chart-container.chart-fullscreen .section-heading,
+.chart-container.chart-fullscreen .chart-heading {
+  margin-bottom: 8px !important;
+  flex-shrink: 0;
+}
+
+/* Compact the chart-data-meta row */
+.chart-container.chart-fullscreen .chart-data-meta {
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+/* Hide the pattern insight row in fullscreen to give chart max space */
+.chart-container.chart-fullscreen .chart-pattern-insight {
+  display: none !important;
+}
+
+/* Icon toggle */
+.chart-container.chart-fullscreen .chart-fullscreen-btn .fa-expand {
+  display: none;
+}
+.chart-container.chart-fullscreen .chart-fullscreen-btn .fa-compress {
+  display: inline-block;
+}
+.chart-fullscreen-btn .fa-compress {
+  display: none;
+}
+
+@keyframes chartFullscreenIn {
+  from { opacity: 0; transform: scale(.98); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+body.chart-is-fullscreen {
+  overflow: hidden !important;
+}

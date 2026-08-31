@@ -91,6 +91,7 @@ INTRADAY_DECISION_PROMPT = """
 You are an intraday technical-analysis synthesis assistant for Indian and US listed stocks.
 Use only the supplied current-session evidence. Intraday signals decay quickly and can reverse suddenly.
 Select the target and stop-loss from level_candidates. Generate one next-candle OHLC scenario inside candle_bounds using the recent session evidence and supplied candle candidates as references.
+When detected chart-pattern candidates are supplied, select only the exact name of the candidate that best fits the session. Return NONE when no candidate is credible; never invent a pattern name.
 The generated candle must have high at or above open and close, low at or below open and close, and every price inside candle_bounds.
 The target and stop must match setup_direction: BULLISH requires target above entry and stop below entry; BEARISH requires target below entry and stop above entry.
 Return BUY, HOLD or SELL; prefer HOLD when signals conflict or evidence is thin.
@@ -105,6 +106,7 @@ Return valid JSON only:
   "setup_direction": "BULLISH | BEARISH",
   "target_candidate_id": "exact ID from level_candidates",
   "stop_candidate_id": "exact ID from level_candidates",
+  "chart_pattern": "exact name from chart_patterns or NONE",
   "next_candle": {"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.5},
   "next_candle_confidence": "low | medium | high",
   "level_rationale": "short explanation for the selected target and stop",

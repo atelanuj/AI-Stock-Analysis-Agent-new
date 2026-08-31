@@ -11,6 +11,33 @@ from app.config import settings
 from app.tools.technical import get_ohlcv_history, predict_next_candle
 
 
+SUPPORTED_CHART_PATTERNS = (
+    "Ascending Triangle",
+    "Descending Triangle",
+    "Symmetrical Triangle",
+    "Expanding Triangle",
+    "Rising Wedge",
+    "Falling Wedge",
+    "Channel Up",
+    "Channel Down",
+    "Rectangle",
+    "Double Top",
+    "Double Bottom",
+    "Triple Top",
+    "Triple Bottom",
+    "Head and Shoulders",
+    "Inverse Head and Shoulders",
+    "Bull Flag",
+    "Bear Flag",
+    "Bull Pennant",
+    "Bear Pennant",
+    "Cup and Handle",
+    "Inverse Cup and Handle",
+    "Rounding Bottom",
+    "Rounding Top",
+)
+
+
 def _finite(value) -> float | None:
     try:
         number = float(value)
@@ -70,15 +97,41 @@ def detect_chart_patterns(rows: list[dict], window: int = 40) -> list[dict]:
     confidence = round(min(88, 52 + 14 * ((upper_r2 + lower_r2) / 2) + 18 * compression), 1)
     candidates = []
 
-    def add(name: str, bias: str, note: str, score: float = confidence):
-        candidates.append({"name": name, "bias": bias, "confidence_pct": round(min(90, max(35, score)), 1), "start_date": sample[0]["date"], "end_date": sample[-1]["date"], "upper_start": round(upper_intercept, 4), "upper_end": round(last_upper, 4), "lower_start": round(lower_intercept, 4), "lower_end": round(last_lower, 4), "note": note})
+    def add(
+        name: str,
+        bias: str,
+        note: str,
+        score: float = confidence,
+        structure: tuple[float, float, float, float] | None = None,
+        dates: tuple[str, str] | None = None,
+    ):
+        line = structure or (upper_intercept, last_upper, lower_intercept, last_lower)
+        span = dates or (sample[0]["date"], sample[-1]["date"])
+        candidates.append({
+            "name": name,
+            "bias": bias,
+            "confidence_pct": round(min(90, max(35, score)), 1),
+            "start_date": span[0],
+            "end_date": span[1],
+            "upper_start": round(line[0], 4),
+            "upper_end": round(line[1], 4),
+            "lower_start": round(line[2], 4),
+            "lower_end": round(line[3], 4),
+            "note": note,
+        })
 
     if abs(upper_rate) < flat and lower_rate > directional:
         add("Ascending Triangle", "BULLISH", "Flat resistance with rising support.")
     elif abs(lower_rate) < flat and upper_rate < -directional:
         add("Descending Triangle", "BEARISH", "Flat support with falling resistance.")
     elif upper_rate < -directional and lower_rate > directional:
-        add("Symmetrical Triangle", "NEUTRAL", "Converging support and resistance; breakout direction needs confirmation.")
+        recent_move = closes[-1] / closes[max(0, len(closes) // 3)] - 1
+        bias = "BULLISH" if recent_move > 0.015 else "BEARISH" if recent_move < -0.015 else "NEUTRAL"
+        add("Symmetrical Triangle", bias, "Converging support and resistance; breakout direction still needs price confirmation.")
+    elif upper_rate > directional and lower_rate < -directional and last_width > first_width * 1.12:
+        midpoint_slope = (upper_slope + lower_slope) / 2
+        bias = "BULLISH" if midpoint_slope > price * flat else "BEARISH" if midpoint_slope < -price * flat else "NEUTRAL"
+        add("Expanding Triangle", bias, "Support and resistance are widening into a broadening formation with elevated breakout risk.")
     elif upper_rate > directional and lower_rate > directional:
         if lower_rate - upper_rate > flat:
             add("Rising Wedge", "BEARISH", "Both boundaries rise while the range contracts.")
@@ -93,6 +146,23 @@ def detect_chart_patterns(rows: list[dict], window: int = 40) -> list[dict]:
         add("Rectangle", "NEUTRAL", "Price is contained between broadly horizontal boundaries.")
 
     peaks, troughs = _swing_points(highs, True), _swing_points(lows, False)
+    peak_tolerance, trough_tolerance = 0.022, 0.022
+    if len(peaks) >= 3:
+        triple = peaks[-3:]
+        values = [point[1] for point in triple]
+        valleys = [min(lows[triple[index][0]:triple[index + 1][0] + 1]) for index in range(2)]
+        if max(values) / min(values) - 1 <= peak_tolerance and all(valley < min(values) * 0.987 for valley in valleys):
+            top = sum(values) / 3
+            neckline = sum(valleys) / 2
+            add("Triple Top", "BEARISH", "Three comparable swing highs formed above two intervening pullbacks.", 80, (top, top, neckline, neckline), (sample[triple[0][0]]["date"], sample[triple[-1][0]]["date"]))
+    if len(troughs) >= 3:
+        triple = troughs[-3:]
+        values = [point[1] for point in triple]
+        rebounds = [max(highs[triple[index][0]:triple[index + 1][0] + 1]) for index in range(2)]
+        if max(values) / min(values) - 1 <= trough_tolerance and all(rebound > max(values) * 1.013 for rebound in rebounds):
+            floor = sum(values) / 3
+            neckline = sum(rebounds) / 2
+            add("Triple Bottom", "BULLISH", "Three comparable swing lows formed below two intervening rebounds.", 80, (neckline, neckline, floor, floor), (sample[triple[0][0]]["date"], sample[triple[-1][0]]["date"]))
     if len(peaks) >= 2:
         left, right = peaks[-2], peaks[-1]
         between = min(lows[left[0]:right[0] + 1]) if right[0] > left[0] else price
@@ -111,8 +181,55 @@ def detect_chart_patterns(rows: list[dict], window: int = 40) -> list[dict]:
         left, head, right = troughs[-3:]
         if head[1] < min(left[1], right[1]) * 0.988 and abs(left[1] / right[1] - 1) <= 0.025:
             add("Inverse Head and Shoulders", "BULLISH", "A lower central trough sits between two similar shoulders.", 76)
+
+    # Continuation structures use a strong impulse followed by a shorter consolidation.
+    tail_size = min(14, max(8, len(sample) // 3))
+    impulse_size = min(10, len(sample) - tail_size)
+    if impulse_size >= 5:
+        tail = sample[-tail_size:]
+        tail_highs = [float(row["high"]) for row in tail]
+        tail_lows = [float(row["low"]) for row in tail]
+        tail_upper_slope, tail_upper_intercept, tail_upper_r2 = _linear_fit(tail_highs)
+        tail_lower_slope, tail_lower_intercept, tail_lower_r2 = _linear_fit(tail_lows)
+        tail_upper_end = tail_upper_intercept + tail_upper_slope * (tail_size - 1)
+        tail_lower_end = tail_lower_intercept + tail_lower_slope * (tail_size - 1)
+        tail_lines = (tail_upper_intercept, tail_upper_end, tail_lower_intercept, tail_lower_end)
+        tail_dates = (tail[0]["date"], tail[-1]["date"])
+        impulse_start = closes[-tail_size - impulse_size]
+        impulse_end = closes[-tail_size]
+        impulse_move = impulse_end / impulse_start - 1 if impulse_start else 0
+        parallel = abs(tail_upper_slope - tail_lower_slope) / price < 0.0007
+        converging = tail_upper_slope / price < -directional and tail_lower_slope / price > directional
+        tail_fit = (tail_upper_r2 + tail_lower_r2) / 2
+        if impulse_move >= 0.025 and parallel and tail_upper_slope < 0 and tail_lower_slope < 0:
+            add("Bull Flag", "BULLISH", "A strong upward impulse is followed by a compact downward-sloping channel.", 64 + 14 * tail_fit, tail_lines, tail_dates)
+        elif impulse_move <= -0.025 and parallel and tail_upper_slope > 0 and tail_lower_slope > 0:
+            add("Bear Flag", "BEARISH", "A strong downward impulse is followed by a compact upward-sloping channel.", 64 + 14 * tail_fit, tail_lines, tail_dates)
+        if impulse_move >= 0.025 and converging:
+            add("Bull Pennant", "BULLISH", "A strong upward impulse is consolidating inside converging boundaries.", 65 + 14 * tail_fit, tail_lines, tail_dates)
+        elif impulse_move <= -0.025 and converging:
+            add("Bear Pennant", "BEARISH", "A strong downward impulse is consolidating inside converging boundaries.", 65 + 14 * tail_fit, tail_lines, tail_dates)
+
+    # Rounded structures are intentionally conservative: the middle third must be
+    # distinctly below/above both outer thirds, with reasonably similar rims.
+    third = len(closes) // 3
+    if third >= 5:
+        left_avg = sum(closes[:third]) / third
+        middle_avg = sum(closes[third:2 * third]) / third
+        right_avg = sum(closes[-third:]) / third
+        rims_close = abs(left_avg / right_avg - 1) <= 0.045 if right_avg else False
+        if rims_close and middle_avg < min(left_avg, right_avg) * 0.965:
+            handle_pullback = max(closes[-max(3, third // 2):]) > closes[-1] * 1.008
+            name = "Cup and Handle" if handle_pullback else "Rounding Bottom"
+            note = "Rounded recovery returned toward the prior rim with a shallow handle pullback." if handle_pullback else "Price formed a broad rounded base and recovered toward its earlier range."
+            add(name, "BULLISH", note, 67 if handle_pullback else 61)
+        elif rims_close and middle_avg > max(left_avg, right_avg) * 1.035:
+            handle_rebound = min(closes[-max(3, third // 2):]) < closes[-1] * 0.992
+            name = "Inverse Cup and Handle" if handle_rebound else "Rounding Top"
+            note = "Rounded distribution returned toward the prior floor with a shallow rebound." if handle_rebound else "Price formed a broad rounded top and weakened toward its earlier range."
+            add(name, "BEARISH", note, 67 if handle_rebound else 61)
     unique = {item["name"]: item for item in candidates}
-    return sorted(unique.values(), key=lambda item: item["confidence_pct"], reverse=True)[:3]
+    return sorted(unique.values(), key=lambda item: item["confidence_pct"], reverse=True)[:6]
 
 
 def _future_dates(first_date: str, rows: list[dict], interval: str, count: int) -> list[str]:
@@ -192,7 +309,7 @@ def _validated_ai_candle(ai: dict, rows: list[dict], fallback: dict | None, inte
 
 def get_ai_candle_prediction(symbol: str, market: str = "IN", period: str = "3mo", interval: str = "1d", force_refresh: bool = False) -> dict:
     symbol, market = symbol.upper(), market.upper()
-    key = f"candle-ai:v2:{market}:{symbol}:{period}:{interval}"
+    key = f"candle-ai:v3:{market}:{symbol}:{period}:{interval}"
     if not force_refresh:
         cached = get_json(key)
         if cached:
@@ -205,7 +322,7 @@ def get_ai_candle_prediction(symbol: str, market: str = "IN", period: str = "3mo
     fallback = _fallback(prediction_rows, interval)
     patterns = detect_chart_patterns(prediction_rows)
     if not fallback:
-        return {"symbol": symbol, "market": market, "ai_available": False, "prediction": None, "patterns": patterns, "error": "Insufficient candle history for a validated forecast.", "cache": "miss"}
+        return {"symbol": symbol, "market": market, "ai_available": False, "prediction": None, "patterns": patterns, "pattern_catalog": list(SUPPORTED_CHART_PATTERNS), "error": "Insufficient candle history for a validated forecast.", "cache": "miss"}
     latest_close = float(prediction_rows[-1]["close"])
     recent = [{name: row.get(name) for name in ("date", "open", "high", "low", "close", "volume")} for row in prediction_rows[-20:]]
     ranges = [float(row["high"]) - float(row["low"]) for row in prediction_rows[-14:] if _finite(row.get("high")) is not None and _finite(row.get("low")) is not None and float(row["high"]) >= float(row["low"])]
@@ -217,8 +334,8 @@ def get_ai_candle_prediction(symbol: str, market: str = "IN", period: str = "3mo
         prediction = _validated_ai_candle(ai, prediction_rows, fallback, interval, patterns)
         if prediction is None:
             raise ValueError("AI returned an invalid or out-of-bounds candle")
-        result = {"symbol": symbol, "market": market, "ai_available": True, "prediction": prediction, "patterns": patterns, "selected_pattern": prediction["selected_pattern"], "future_trend": prediction["future_trend"], "trend_bias": prediction["trend_bias"], "cache": "miss"}
+        result = {"symbol": symbol, "market": market, "ai_available": True, "prediction": prediction, "patterns": patterns, "pattern_catalog": list(SUPPORTED_CHART_PATTERNS), "selected_pattern": prediction["selected_pattern"], "future_trend": prediction["future_trend"], "trend_bias": prediction["trend_bias"], "cache": "miss"}
     except Exception as exc:
-        result = {"symbol": symbol, "market": market, "ai_available": False, "prediction": fallback, "patterns": patterns, "selected_pattern": patterns[0]["name"] if patterns else "NONE", "future_trend": [], "trend_bias": "UNAVAILABLE", "error": str(exc)[:180], "cache": "miss"}
+        result = {"symbol": symbol, "market": market, "ai_available": False, "prediction": fallback, "patterns": patterns, "pattern_catalog": list(SUPPORTED_CHART_PATTERNS), "selected_pattern": patterns[0]["name"] if patterns else "NONE", "future_trend": [], "trend_bias": "UNAVAILABLE", "error": str(exc)[:180], "cache": "miss"}
     set_json(key, result, ttl=settings.ai_cache_ttl_seconds)
     return result

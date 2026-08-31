@@ -74,3 +74,16 @@ def test_chart_pattern_detector_finds_rising_channel():
     assert patterns
     assert patterns[0]["name"] == "Channel Up"
     assert patterns[0]["bias"] == "BULLISH"
+
+
+def test_chart_pattern_catalog_covers_reversal_and_continuation_families():
+    supported = set(candle_prediction.SUPPORTED_CHART_PATTERNS)
+    assert {
+        "Double Top", "Double Bottom", "Triple Top", "Triple Bottom",
+        "Head and Shoulders", "Inverse Head and Shoulders",
+        "Rising Wedge", "Falling Wedge", "Expanding Triangle",
+        "Bull Flag", "Bear Flag", "Bull Pennant", "Bear Pennant",
+        "Ascending Triangle", "Descending Triangle", "Symmetrical Triangle",
+        "Cup and Handle", "Inverse Cup and Handle",
+    } <= supported
+    assert len(supported) == 23

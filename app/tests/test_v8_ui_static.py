@@ -53,8 +53,8 @@ def test_chart_shows_projected_candle_and_ai_trade_levels():
     assert "AI target" in JS
     assert "AI stop" in JS
     assert 'fillcolor:\'rgba(168,85,247,.78)\'' in JS
-    assert '/static/app.js?v=8.2.13' in HTML
-    assert '/static/styles.css?v=8.2.16' in HTML
+    assert '/static/app.js?v=8.2.17' in HTML
+    assert '/static/styles.css?v=8.2.21' in HTML
     assert "hoverlabel:hoverStyle" in JS
     assert "hovermode:'x'" in JS
     assert "#candlestick-chart .hoverlayer text" in CSS
@@ -107,6 +107,26 @@ def test_intraday_ai_candle_and_trade_levels_are_rendered_safely():
     assert "ai_level_source" in JS
     assert ".intraday-chart-card #intraday-chart{height:440px;min-height:440px}" in CSS
     assert ".intraday-chart-card{min-width:0;height:auto;overflow:hidden}" in CSS
+    assert 'id="intraday-pattern-insight"' in HTML
+    assert 'id="toggle-intraday-pattern"' in HTML
+    assert "renderIntradayPatternInsight" in JS
+    assert "pattern_selection_source" in JS
+
+
+def test_every_chart_has_an_accessible_fullscreen_control():
+    soup = BeautifulSoup(HTML, "html.parser")
+    chart_ids = ["candlestick-chart", "intraday-chart", "mf-nav-chart", "mf-benchmark-chart", "mf-returns-chart"]
+    for chart_id in chart_ids:
+        chart = soup.find(id=chart_id)
+        assert chart is not None
+        container = chart.find_parent(class_="chart-container")
+        assert container is not None
+        button = container.find(attrs={"data-fullscreen-chart": True})
+        assert button is not None
+        assert button.get("aria-label")
+    assert "toggleChartFullscreen" in JS
+    assert "chart-is-fullscreen" in JS
+    assert ".chart-container.chart-container.chart-fullscreen" in CSS
 
 
 def test_final_ai_decision_is_prominent_and_waits_for_all_stock_evidence():

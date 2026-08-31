@@ -25,6 +25,14 @@ def _core():
             "direction": "BULLISH",
             "method": "Synthetic historical analog",
         },
+        "chart_patterns": [{
+            "name": "Bull Flag", "bias": "BULLISH", "confidence_pct": 74,
+            "start_date": "2026-08-28T14:30:00+05:30", "end_date": "2026-08-28T15:25:00+05:30",
+            "upper_start": 101.0, "upper_end": 100.5, "lower_start": 99.5, "lower_end": 99.2,
+            "note": "Synthetic continuation pattern",
+        }],
+        "selected_pattern": "Bull Flag",
+        "pattern_catalog": ["Bull Flag", "Bear Flag"],
     }
 
 
@@ -42,6 +50,7 @@ def test_intraday_ai_selects_validated_target_stop_and_candle(monkeypatch):
         "setup_direction": "BULLISH",
         "target_candidate_id": "technical_target",
         "stop_candidate_id": "risk_control",
+        "chart_pattern": "Bull Flag",
         "next_candle": {"open": 100.0, "high": 101.2, "low": 99.6, "close": 100.8},
         "next_candle_confidence": "medium",
         "level_rationale": "Validated test levels",
@@ -55,6 +64,8 @@ def test_intraday_ai_selects_validated_target_stop_and_candle(monkeypatch):
     assert result["next_candle_prediction"]["source"] == "ai_generated"
     assert result["next_candle_prediction"]["direction"] == "BULLISH"
     assert result["next_candle_prediction"]["confidence"] == "medium"
+    assert result["selected_pattern"] == "Bull Flag"
+    assert result["pattern_selection_source"] == "ai_selected"
 
 
 def test_intraday_invalid_ai_choices_use_validated_fallback(monkeypatch):
@@ -78,6 +89,7 @@ def test_intraday_invalid_ai_choices_use_validated_fallback(monkeypatch):
     assert result["target"] == core["technical_target"]
     assert result["risk_control"] == core["risk_control"]
     assert result["next_candle_prediction"]["source"] == "validated_fallback"
+    assert result["selected_pattern"] == "Bull Flag"
 
 
 def test_intraday_ai_failure_is_explicitly_marked_unavailable(monkeypatch):
