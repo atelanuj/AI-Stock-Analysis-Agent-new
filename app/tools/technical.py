@@ -16,6 +16,8 @@ _TIMEFRAME_CONFIG = {
     "3M": {"sessions": 63, "level_sessions": 63, "return_threshold": 6.0, "fast_ma": 20, "slow_ma": 50},
     "6M": {"sessions": 126, "level_sessions": 126, "return_threshold": 10.0, "fast_ma": 50, "slow_ma": 100},
     "1Y": {"sessions": 252, "level_sessions": 252, "return_threshold": 15.0, "fast_ma": 50, "slow_ma": 200},
+    "3Y": {"sessions": 756, "level_sessions": 756, "return_threshold": 30.0, "fast_ma": 200, "slow_ma": 252},
+    "5Y": {"sessions": 1260, "level_sessions": 1260, "return_threshold": 40.0, "fast_ma": 252, "slow_ma": 504},
 }
 
 _BENCHMARKS = {
@@ -492,7 +494,7 @@ def _volume_analysis(hist: pd.DataFrame) -> dict:
 
 
 def _benchmark_history(market: str) -> pd.Series:
-    return get_benchmark_close((market or "IN").upper())
+    return get_benchmark_close((market or "IN").upper(), period="5y")
 
 
 def _relative_strength(close: pd.Series, market: str, benchmark_close: pd.Series | None = None) -> dict:
@@ -634,7 +636,7 @@ def get_technical(
 ) -> dict:
     resolved_market = (market or "IN").upper()
     if hist is None:
-        hist = get_history_df(symbol, resolved_market, period="1y", auto_adjust=False)
+        hist = get_history_df(symbol, resolved_market, period="5y", auto_adjust=False)
     if hist is None or hist.empty or len(hist) < 50:
         raise ValueError(f"Insufficient technical data for {symbol}")
     data = hist.dropna(subset=["High", "Low", "Close"]).copy()
@@ -677,5 +679,5 @@ def get_technical(
     base["risk_reward"] = timelines["1M"]["risk_reward"]
     base["relative_strength"] = _relative_strength(close, resolved_market, benchmark_close=benchmark_close)
     base["trend_outlook"] = _directional_outlook(base, patterns, close)
-    base["performance_note"] = "V7 technicals reuse validated/sanitized cached OHLC; 5Y backtests load only on demand. The 1D horizon participates in multi-timeframe analysis."
+    base["performance_note"] = "Technicals reuse validated/sanitized cached 5Y OHLC. Eight horizons from 1D through 5Y participate in multi-timeframe analysis; strategy backtests remain on demand."
     return base

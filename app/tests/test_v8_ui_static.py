@@ -26,9 +26,23 @@ def test_v8_no_duplicate_dom_ids():
 def test_v8_screener_navigation_and_1d_preserved():
     assert "activateTab('stocks')" in JS
     assert "activateTab('mutual-funds')" in JS
-    assert "order=['1D','1W','1M','3M','6M','1Y']" in JS
+    assert "order=['1D','1W','1M','3M','6M','1Y','3Y','5Y']" in JS
     assert "runIntraday" in JS
     assert "loadIPOList" in JS
+
+
+def test_feature_tiles_are_keyboard_accessible_workspace_shortcuts():
+    soup = BeautifulSoup(HTML, "html.parser")
+    shortcuts = soup.select("button.feature-chip[data-feature-tab]")
+    assert len(shortcuts) == 5
+    assert "[data-feature-tab]" in JS
+
+
+def test_market_and_ipo_refresh_bypass_transient_empty_cache():
+    assert "runMarketOverview(true)" in JS
+    assert "loadIPOList(true)" in JS
+    assert "force_refresh" in JS
+    assert "d.available===false" in JS
 
 
 def test_v8_redesign_has_readability_components():
@@ -53,8 +67,8 @@ def test_chart_shows_projected_candle_and_ai_trade_levels():
     assert "AI target" in JS
     assert "AI stop" in JS
     assert 'fillcolor:\'rgba(168,85,247,.78)\'' in JS
-    assert '/static/app.js?v=8.2.18' in HTML
-    assert '/static/styles.css?v=8.2.21' in HTML
+    assert '/static/app.js?v=8.2.25' in HTML
+    assert '/static/styles.css?v=8.2.24' in HTML
     assert "hoverlabel:hoverStyle" in JS
     assert "hovermode:'x'" in JS
     assert "#candlestick-chart .hoverlayer text" in CSS
@@ -79,6 +93,28 @@ def test_watchlist_csv_import_and_export_are_available():
     assert "exportWatchlistCsv" in JS
     assert "importWatchlistCsv" in JS
     assert "Required columns: Symbol and Market" in JS
+
+
+def test_advanced_paper_trade_journal_has_live_levels_and_optional_risk():
+    soup = BeautifulSoup(HTML, "html.parser")
+    assert soup.select_one('[data-tab="journal"]') is not None
+    assert soup.select_one('#tab-journal') is not None
+    assert soup.select_one('#paper-stop').get("placeholder") == "Optional"
+    for marker in [
+        'id="paper-trade-chart"', 'id="paper-summary"', 'id="paper-refresh"',
+        'id="paper-quantity"', 'id="paper-notes"', 'id="paper-export"',
+        'id="paper-import"', 'id="paper-import-file"',
+    ]:
+        assert marker in HTML
+    for marker in [
+        "/api/quote/", "/api/history/", "Entry", "Target", "Current",
+        "renderPaperTradeChart", "refreshPaperPrices", "TARGET REACHED",
+        "exportPaperJournalCsv", "importPaperJournalCsv", "Simulated P&L",
+        "displayModeBar:false", "scalePadding", "levelLegendTraces",
+        "chart.querySelector('.plot-container')",
+    ]:
+        assert marker in JS
+    assert ".paper-chart-layout" in CSS
 
 
 def test_active_ai_sections_show_availability_labels():
@@ -137,6 +173,8 @@ def test_stock_chart_uses_dense_tradingview_style_candle_intervals():
         "'3mo':{interval:'60m',fallback:'1d'",
         "fetchDenseCandles",
         "type:'category'",
+        "'3y':{interval:'1d'",
+        "'5y':{interval:'1d'",
     ]:
         assert marker in JS
     for title in [
@@ -144,6 +182,8 @@ def test_stock_chart_uses_dense_tradingview_style_candle_intervals():
         'title="1 week with 15-minute candles"',
         'title="1 month with 1-hour candles"',
         'title="3 months with 1-hour candles"',
+        'title="3 years with daily candles"',
+        'title="5 years with daily candles"',
     ]:
         assert title in HTML
 

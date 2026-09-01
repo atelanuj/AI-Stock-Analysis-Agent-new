@@ -6,6 +6,8 @@ from app.agent.prompts import SYSTEM_PROMPT, TECHNICAL_DECISION_PROMPT, CANDLE_P
 client = OpenAI(
     base_url=settings.nvidia_base_url,
     api_key=settings.nvidia_api_key,
+    timeout=settings.ai_request_timeout_seconds,
+    max_retries=0,
 )
 
 def _parse_json_content(content: str) -> dict:
@@ -20,9 +22,10 @@ def _parse_json_content(content: str) -> dict:
         raise ValueError(f"Model did not return valid JSON: {content[:500]}") from exc
 
 
-def _completion_extra_body() -> dict:
+def _completion_extra_body(enable_thinking: bool | None = None) -> dict:
+    thinking = settings.ai_enable_thinking if enable_thinking is None else enable_thinking
     body = {
-        "chat_template_kwargs": {"enable_thinking": settings.ai_enable_thinking},
+        "chat_template_kwargs": {"enable_thinking": thinking},
     }
     # NVIDIA's hosted Nemotron 3 Ultra runner supports thinking through the
     # chat template flag, but rejects the separate reasoning_budget field.
@@ -30,7 +33,7 @@ def _completion_extra_body() -> dict:
         body["reasoning_budget"] = settings.ai_reasoning_budget
     return body
 
-def _complete(system_prompt: str, user_content: str) -> dict:
+def _complete(system_prompt: str, user_content: str, *, max_tokens: int | None = None, enable_thinking: bool | None = None) -> dict:
     completion = client.chat.completions.create(
         model=settings.nvidia_model,
         messages=[
@@ -39,8 +42,8 @@ def _complete(system_prompt: str, user_content: str) -> dict:
         ],
         temperature=settings.ai_temperature,
         top_p=settings.ai_top_p,
-        max_tokens=settings.ai_max_tokens,
-        extra_body=_completion_extra_body(),
+        max_tokens=max_tokens or settings.ai_max_tokens,
+        extra_body=_completion_extra_body(enable_thinking),
     )
     return _parse_json_content(completion.choices[0].message.content or "")
 
@@ -61,6 +64,8 @@ def synthesize_candle_prediction(prompt_payload: dict) -> dict:
     return _complete(
         CANDLE_PREDICTION_PROMPT,
         "Generate one bounded next-candle OHLC scenario from this evidence. Return JSON only.\n\n" + json.dumps(prompt_payload, default=str),
+        max_tokens=settings.ai_fast_max_tokens,
+        enable_thinking=False,
     )
 
 
@@ -68,6 +73,8 @@ def synthesize_final_stock_decision(prompt_payload: dict) -> dict:
     return _complete(
         FINAL_STOCK_DECISION_PROMPT,
         "Combine all supplied UI evidence into one final BUY, HOLD or SELL decision. Return JSON only.\n\n" + json.dumps(prompt_payload, default=str),
+        max_tokens=settings.ai_fast_max_tokens,
+        enable_thinking=False,
     )
 
 
@@ -81,6 +88,8 @@ def synthesize_ipo_analysis(prompt_payload: dict) -> dict:
     return _complete(
         IPO_ANALYSIS_PROMPT,
         "Evaluate this pre-listing IPO evidence conservatively. Return JSON only.\n\n" + json.dumps(prompt_payload, default=str),
+        max_tokens=settings.ai_fast_max_tokens,
+        enable_thinking=False,
     )
 
 def synthesize_chat(prompt_payload: dict) -> dict:

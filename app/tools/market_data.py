@@ -56,7 +56,10 @@ def get_market_data(symbol: str, market: str | None = None, hist=None, info: dic
     close = hist["Close"].dropna().astype(float)
     if close.empty:
         raise ValueError(f"No usable close-price data found for {symbol}")
-    latest_close, first = float(close.iloc[-1]), float(close.iloc[0])
+    latest_close = float(close.iloc[-1])
+    one_year_hist = hist.tail(252)
+    one_year_close = one_year_hist["Close"].dropna().astype(float)
+    first = float(one_year_close.iloc[0]) if not one_year_close.empty else latest_close
     quality = dict(quote_snapshot or {})
     live_price = _finite(quality.get("price"))
     latest = live_price if live_price is not None else latest_close
@@ -82,8 +85,8 @@ def get_market_data(symbol: str, market: str | None = None, hist=None, info: dic
         "quote_as_of": quality.get("as_of"),
         "quote_source": quality.get("source") or "Yahoo Finance daily OHLC",
         "data_quality": quality,
-        "one_year_high": float(hist["High"].dropna().max()) if "High" in hist and not hist["High"].dropna().empty else float(close.max()),
-        "one_year_low": float(hist["Low"].dropna().min()) if "Low" in hist and not hist["Low"].dropna().empty else float(close.min()),
+        "one_year_high": float(one_year_hist["High"].dropna().max()) if "High" in one_year_hist and not one_year_hist["High"].dropna().empty else float(one_year_close.max()),
+        "one_year_low": float(one_year_hist["Low"].dropna().min()) if "Low" in one_year_hist and not one_year_hist["Low"].dropna().empty else float(one_year_close.min()),
         "one_year_return_pct": ((latest_close / first) - 1) * 100 if first else None,
         "avg_volume_20d": float(volume.tail(20).mean()) if volume is not None and not volume.empty else None,
     }

@@ -7,14 +7,89 @@ from __future__ import annotations
 
 import math
 import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from typing import Iterable
 
 import pandas as pd
+import requests
 import yfinance as yf
 
 from app.cache.redis_cache import get_json, set_json
 from app.config import settings
 from app.tools.market_data import yahoo_symbol
+
+
+_YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+_YAHOO_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; StockAIAgent/8.2)"}
+
+
+def _epoch(value) -> int:
+    if isinstance(value, (int, float)):
+        return int(value)
+    parsed = pd.Timestamp(value)
+    if parsed.tzinfo is None:
+        parsed = parsed.tz_localize(timezone.utc)
+    return int(parsed.timestamp())
+
+
+def get_yahoo_chart_history(
+    yahoo_sym: str,
+    period: str = "1y",
+    interval: str = "1d",
+    auto_adjust: bool = False,
+    timeout: int | float | None = None,
+    start=None,
+    end=None,
+) -> pd.DataFrame:
+    """Fetch Yahoo's public chart JSON without the consent-cookie host.
+
+    Recent yfinance releases can contact ``guce.yahoo.com`` while negotiating a
+    cookie.  If that DNS lookup is unavailable, the chart endpoint itself can
+    still be healthy.  This small adapter is therefore both a fallback and a
+    reusable path for raw Yahoo index symbols.
+    """
+    params = {"interval": interval, "events": "div,splits", "includeAdjustedClose": "true"}
+    if start is not None:
+        params["period1"] = _epoch(start)
+        params["period2"] = _epoch(end or datetime.now(timezone.utc))
+    else:
+        params["range"] = period
+    response = requests.get(
+        _YAHOO_CHART_URL.format(symbol=requests.utils.quote(yahoo_sym, safe="")),
+        params=params,
+        headers=_YAHOO_HEADERS,
+        timeout=timeout or settings.market_data_timeout_seconds,
+    )
+    response.raise_for_status()
+    chart = (response.json() or {}).get("chart") or {}
+    if chart.get("error"):
+        raise ValueError(str(chart["error"].get("description") or chart["error"]))
+    result = (chart.get("result") or [None])[0]
+    if not result:
+        return pd.DataFrame()
+    timestamps = result.get("timestamp") or []
+    quote = (((result.get("indicators") or {}).get("quote") or [{}])[0])
+    if not timestamps or not quote:
+        return pd.DataFrame()
+    columns = {
+        "Open": quote.get("open") or [], "High": quote.get("high") or [],
+        "Low": quote.get("low") or [], "Close": quote.get("close") or [],
+        "Volume": quote.get("volume") or [],
+    }
+    adjusted = (((result.get("indicators") or {}).get("adjclose") or [{}])[0]).get("adjclose") or []
+    size = len(timestamps)
+    data = {name: list(values)[:size] + [None] * max(0, size - len(values)) for name, values in columns.items()}
+    if adjusted:
+        data["Adj Close"] = list(adjusted)[:size] + [None] * max(0, size - len(adjusted))
+    frame = pd.DataFrame(data, index=pd.to_datetime(timestamps, unit="s", utc=True))
+    if auto_adjust and "Adj Close" in frame:
+        close = pd.to_numeric(frame["Close"], errors="coerce")
+        ratio = pd.to_numeric(frame["Adj Close"], errors="coerce") / close
+        for column in ("Open", "High", "Low", "Close"):
+            frame[column] = pd.to_numeric(frame[column], errors="coerce") * ratio
+        frame = frame.drop(columns=["Adj Close"])
+    return sanitize_ohlcv_frame(frame)
 
 
 
@@ -36,11 +111,21 @@ def _missing_scipy(exc: BaseException) -> bool:
 def _ticker_history_with_repair_fallback(ticker, **kwargs):
     """Prefer yfinance price repair, but never fail the page just because an optional repair dependency is missing."""
     try:
-        return ticker.history(repair=True, **kwargs)
+        result = ticker.history(repair=True, **kwargs)
     except Exception as exc:
-        if not _missing_scipy(exc):
-            raise
-        return ticker.history(repair=False, **kwargs)
+        if _missing_scipy(exc):
+            result = ticker.history(repair=False, **kwargs)
+        else:
+            result = None
+    if result is not None and not getattr(result, "empty", False):
+        return result
+    yahoo_sym = getattr(ticker, "ticker", None)
+    if not yahoo_sym:
+        if result is not None:
+            return result
+        raise RuntimeError("Yahoo history failed and no ticker symbol was available for fallback")
+    direct_kwargs = {key: kwargs.get(key) for key in ("period", "interval", "auto_adjust", "timeout", "start", "end") if kwargs.get(key) is not None}
+    return get_yahoo_chart_history(yahoo_sym, **direct_kwargs)
 
 
 def _download_with_repair_fallback(**kwargs):
@@ -178,16 +263,21 @@ def get_info(symbol: str, market: str | None = None, force_refresh: bool = False
     def fetch():
         return yf.Ticker(yahoo_sym).info or {}
 
-    info = _retry(fetch)
+    try:
+        info = _retry(fetch)
+    except Exception:
+        # Fundamentals are optional.  Price/technical analysis should remain
+        # usable when Yahoo's quote-summary or consent service is unavailable.
+        info = {}
     if info:
         set_json(key, info, ttl=settings.fundamentals_cache_ttl_seconds)
     return info or {}
 
 
-def get_benchmark_close(market: str, force_refresh: bool = False) -> pd.Series:
+def get_benchmark_close(market: str, force_refresh: bool = False, period: str = "1y") -> pd.Series:
     yahoo_sym = "^GSPC" if (market or "IN").upper() == "US" else "^NSEI"
     # Use the provider directly because these already are Yahoo symbols.
-    key = history_cache_key(yahoo_sym, "1y", "1d", True)
+    key = history_cache_key(yahoo_sym, period, "1d", True)
     if not force_refresh:
         cached = sanitize_ohlcv_frame(_payload_frame(get_json(key)))
         if not cached.empty and "Close" in cached:
@@ -196,7 +286,7 @@ def get_benchmark_close(market: str, force_refresh: bool = False) -> pd.Series:
     def fetch():
         return _ticker_history_with_repair_fallback(
             yf.Ticker(yahoo_sym),
-            period="1y", interval="1d", auto_adjust=True,
+            period=period, interval="1d", auto_adjust=True,
             timeout=settings.market_data_timeout_seconds,
         )
 
@@ -207,7 +297,7 @@ def get_benchmark_close(market: str, force_refresh: bool = False) -> pd.Series:
     hist = sanitize_ohlcv_frame(hist)
     if hist is None or hist.empty or "Close" not in hist:
         return pd.Series(dtype=float)
-    cache_history_frame(yahoo_sym, hist, "1y", "1d", True, ttl=settings.benchmark_cache_ttl_seconds)
+    cache_history_frame(yahoo_sym, hist, period, "1d", True, ttl=settings.benchmark_cache_ttl_seconds)
     return hist["Close"].dropna()
 
 
@@ -247,9 +337,22 @@ def batch_history(symbols: Iterable[str], market: str, period: str = "1y") -> di
             timeout=settings.market_data_timeout_seconds,
         )
     except Exception:
-        return result
+        downloaded = pd.DataFrame()
 
     if downloaded is None or downloaded.empty:
+        # The batch downloader also depends on yfinance's cookie negotiation.
+        # Fall back to the chart JSON for a bounded sample so market breadth is
+        # still informative during a guce.yahoo.com DNS outage.
+        def direct(ys):
+            try:
+                return ys, get_yahoo_chart_history(ys, period=period, interval="1d", auto_adjust=False)
+            except Exception:
+                return ys, pd.DataFrame()
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            for ys, df in pool.map(direct, missing[:50]):
+                if not df.empty:
+                    result[ys] = df
+                    cache_history_frame(ys, df, period, "1d", False)
         return result
 
     if len(missing) == 1 and not isinstance(downloaded.columns, pd.MultiIndex):

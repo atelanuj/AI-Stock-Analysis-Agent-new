@@ -9,8 +9,8 @@ from app.config import settings
 from app.db.database import save_technical_recommendation
 from app.services.analysis import analyze_stock_core
 
-_HORIZONS = {"1D", "1W", "1M", "3M", "6M", "1Y"}
-_WEIGHTS = {"1D": 0.08, "1W": 0.12, "1M": 0.18, "3M": 0.22, "6M": 0.18, "1Y": 0.22}
+_HORIZONS = {"1D", "1W", "1M", "3M", "6M", "1Y", "3Y", "5Y"}
+_WEIGHTS = {"1D": 0.05, "1W": 0.08, "1M": 0.12, "3M": 0.16, "6M": 0.14, "1Y": 0.17, "3Y": 0.14, "5Y": 0.14}
 
 
 def _clamp(value: float, low: float = 0.0, high: float = 100.0) -> float:
@@ -162,7 +162,7 @@ def _ai_selected_setup(technical: dict, horizon: str, ai: dict, fallback: dict) 
 def build_technical_decision(technical: dict, horizon: str) -> dict:
     horizon = horizon.upper()
     if horizon not in _HORIZONS:
-        raise ValueError("horizon must be one of 1D, 1W, 1M, 3M, 6M, 1Y")
+        raise ValueError("horizon must be one of 1D, 1W, 1M, 3M, 6M, 1Y, 3Y, 5Y")
 
     timelines = technical.get("timeline_biases", {})
     selected = timelines.get(horizon, {})
@@ -239,7 +239,7 @@ def build_technical_decision(technical: dict, horizon: str) -> dict:
         "breakout": breakout,
         "setup": setup,
         "methodology": [
-            "All six technical horizons (1D, 1W, 1M, 3M, 6M, 1Y)",
+            "All eight technical horizons (1D, 1W, 1M, 3M, 6M, 1Y, 3Y, 5Y)",
             "Selected-horizon signal agreement and price structure",
             "RSI, MACD, VWAP, ATR, ADX and relative volume",
             "Breakout/breakdown state and dynamic support/resistance zones",

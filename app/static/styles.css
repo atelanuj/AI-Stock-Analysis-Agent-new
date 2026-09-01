@@ -917,7 +917,7 @@ a.news-item:hover {
 .quality-main,.quality-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.quality-main{min-width:0}.quality-main>span:last-child{font-size:.76rem;color:var(--text-secondary);overflow-wrap:anywhere}.quality-meta{font-size:.7rem;color:var(--text-secondary);justify-content:flex-end}
 .quality-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;font-size:.7rem;font-weight:750;border:1px solid var(--glass-border);white-space:nowrap}.quality-badge.verified{color:var(--positive);background:rgba(16,185,129,.09);border-color:rgba(16,185,129,.32)}.quality-badge.check,.quality-diff.warning{color:var(--warning)}.quality-badge.check{background:rgba(245,158,11,.09);border-color:rgba(245,158,11,.32)}.quality-badge.single{color:var(--text-secondary)}.quality-badge.bad{color:var(--negative);background:rgba(239,68,68,.09)}
 .chart-data-meta{font-size:.68rem;color:var(--text-secondary);margin:4px 0 8px;line-height:1.4;overflow-wrap:anywhere}.stock-price-block small{display:block;margin-top:5px;font-size:.68rem}
-.trend-timeframes{grid-template-columns:repeat(6,minmax(0,1fr))}
+.trend-timeframes{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:1050px){.trend-timeframes{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.data-quality-strip{align-items:flex-start}.quality-meta{justify-content:flex-start}.trend-timeframes{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
@@ -1069,10 +1069,13 @@ body{background:var(--bg-primary);}
 /* V8 market, strategy and paper-lab additions */
 .market-index-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}.market-index-card{border:1px solid var(--border-color);background:var(--bg-secondary);border-radius:11px;padding:13px}.market-index-card>div:first-child{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.market-index-card b{font-size:.88rem}.market-index-card>div:first-child span{font-size:1rem;font-weight:750}.market-index-card small{display:block;color:var(--text-secondary);font-size:.68rem;margin-top:7px}.index-returns{display:flex;gap:10px;flex-wrap:wrap;font-size:.72rem;margin-top:9px}
 .strategy-builder{margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)}.strategy-builder summary{cursor:pointer;font-weight:700;color:var(--text-primary);padding:5px 0}.strategy-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;align-items:end;margin-top:12px}.strategy-grid label{display:flex;flex-direction:column;gap:5px;color:var(--text-secondary);font-size:.7rem}.strategy-grid .check-label{flex-direction:row;align-items:center;min-height:44px}.strategy-grid input[type="checkbox"]{accent-color:var(--primary-color)}.strategy-results{margin-top:12px}.ownership-block{margin-top:18px;padding-top:16px;border-top:1px solid var(--border-color)}
-.paper-form{display:grid;grid-template-columns:120px minmax(130px,1fr) 110px repeat(3,minmax(110px,1fr)) auto;gap:9px;margin:12px 0}.paper-form .glass-input{min-width:0}
+.paper-entry-card{background:linear-gradient(135deg,color-mix(in srgb,var(--primary-color) 5%,var(--card-bg)),var(--card-bg))!important}.paper-form{display:grid;grid-template-columns:100px minmax(150px,1.1fr) 105px repeat(4,minmax(120px,.8fr));gap:10px;align-items:end;margin:14px 0 6px}.paper-form label{display:flex;flex-direction:column;gap:6px;min-width:0;color:var(--text-secondary);font-size:.7rem;font-weight:650}.paper-form label>span{display:block}.paper-form label em{margin-left:4px;font-style:normal;font-size:.62rem;font-weight:500;color:var(--text-secondary)}.paper-form .glass-input{min-width:0;width:100%}.paper-form .paper-notes-field{grid-column:span 4}.paper-form #paper-add{min-height:44px;align-self:end}.paper-summary{margin:0 0 18px}.paper-summary .mini-kpi{position:relative;overflow:hidden}.paper-summary .mini-kpi::after{content:"";position:absolute;inset:auto -18px -25px auto;width:70px;height:70px;border-radius:50%;background:color-mix(in srgb,var(--primary-color) 12%,transparent)}
+.paper-chart-card{overflow:hidden}.paper-chart-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,280px);gap:22px;align-items:stretch}.paper-chart-card #paper-trade-chart{min-width:0;height:420px;min-height:420px}.paper-trade-detail{display:flex;flex-direction:column;gap:9px}.paper-level{padding:11px 12px;border:1px solid var(--border-color);border-left:3px solid var(--text-secondary);border-radius:10px;background:var(--bg-secondary)}.paper-level.entry{border-left-color:#60a5fa}.paper-level.current{border-left-color:#f59e0b}.paper-level.target{border-left-color:var(--positive)}.paper-level.stop{border-left-color:var(--negative)}.paper-level span,.paper-level small{display:block;color:var(--text-secondary);font-size:.68rem}.paper-level b{display:block;margin:3px 0;font-size:.95rem}.paper-thesis{padding:11px 12px;border-radius:10px;background:color-mix(in srgb,var(--primary-color) 8%,var(--bg-secondary));border:1px solid var(--border-color)}.paper-thesis span{font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);font-weight:750}.paper-thesis p{margin:5px 0 0;font-size:.74rem;line-height:1.5}.paper-chart-empty,.paper-empty{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text-secondary);text-align:center}.paper-chart-empty i,.paper-empty i{font-size:1.6rem;color:var(--primary-color)}.paper-empty{min-height:180px}.paper-table{min-width:1050px}.paper-row{cursor:pointer}.paper-row.selected{background:color-mix(in srgb,var(--primary-color) 10%,transparent)!important;box-shadow:inset 3px 0 0 var(--primary-color)}.paper-trade-meta{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:.66rem;color:var(--text-secondary)}.paper-table td small{display:block;margin-top:4px;color:var(--text-secondary);font-size:.64rem}.paper-row-actions{display:flex;gap:4px}.paper-row-actions .icon-btn{width:32px;height:32px}.paper-positive{color:var(--positive)!important}.paper-negative{color:var(--negative)!important}.paper-progress{width:76px;height:6px;border-radius:999px;background:var(--border-color);overflow:hidden}.paper-progress span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--primary-color),var(--positive))}.paper-status{display:inline-flex;white-space:nowrap;padding:5px 7px;border-radius:999px;background:var(--bg-secondary);border:1px solid var(--border-color);font-size:.62rem;font-weight:800}.paper-status.target-reached{color:var(--positive);background:var(--v8-positive-bg);border-color:color-mix(in srgb,var(--positive) 35%,var(--border-color))}.paper-status.stop-hit{color:var(--negative);background:var(--v8-negative-bg);border-color:color-mix(in srgb,var(--negative) 35%,var(--border-color))}.paper-status.price-needed{color:var(--warning);background:var(--v8-warning-bg)}
 .chat-followups{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.chat-suggestion{border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--primary-color);border-radius:999px;padding:5px 8px;font-size:.66rem;cursor:pointer}.chat-suggestion:hover{border-color:var(--primary-color)}
-@media(max-width:1050px){.market-index-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.paper-form{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:650px){.market-index-grid,.strategy-grid,.paper-form{grid-template-columns:1fr}}
+@media(max-width:1180px){.paper-form{grid-template-columns:repeat(4,minmax(0,1fr))}.paper-form .paper-notes-field{grid-column:span 3}}
+@media(max-width:1050px){.market-index-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.paper-chart-layout{grid-template-columns:1fr}.paper-trade-detail{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.paper-thesis{grid-column:1/-1}}
+@media(max-width:650px){.market-index-grid,.strategy-grid,.paper-form{grid-template-columns:1fr}.paper-form .paper-notes-field{grid-column:auto}.paper-trade-detail{grid-template-columns:1fr 1fr}.paper-chart-card #paper-trade-chart{height:370px;min-height:370px}.page-intro .inline-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}.page-intro .inline-actions .glass-btn{width:100%}}
+@media(max-width:420px){.paper-trade-detail{grid-template-columns:1fr}}
 
 
 /* V8.1 targeted UI fixes */
@@ -1369,4 +1372,409 @@ body{background:var(--bg-primary);}
 
 body.chart-is-fullscreen {
   overflow: hidden !important;
+}
+
+/* =========================================================
+   V9 TradeVision-Style Visual Overhaul — Stocks Section
+   Premium dark trading dashboard aesthetic
+   ========================================================= */
+
+/* ── 1. Enhanced Color Palette ── */
+[data-theme="dark"] {
+  --bg-primary: #050b18;
+  --bg-secondary: #0a1628;
+  --card-bg: #0d1a2d;
+  --glass-bg: #0d1a2d;
+  --glass-border: #1a2d4a;
+  --border-color: #1a2d4a;
+  --accent-teal: #00d4aa;
+  --accent-cyan: #22d3ee;
+  --accent-purple: #a855f7;
+  --gradient-card-border: linear-gradient(135deg, rgba(0,212,170,.35), rgba(34,211,238,.12), transparent 60%);
+  --glow-positive: 0 0 20px rgba(16,185,129,.15), 0 0 60px rgba(16,185,129,.06);
+  --glow-negative: 0 0 20px rgba(239,68,68,.15), 0 0 60px rgba(239,68,68,.06);
+  --glow-teal: 0 0 20px rgba(0,212,170,.12), 0 0 50px rgba(0,212,170,.05);
+  --glow-primary: 0 0 20px rgba(79,141,247,.15), 0 0 60px rgba(79,141,247,.06);
+}
+
+/* ── 2. Gradient-bordered Glass Panels ── */
+#stock-results .glass-panel,
+#stock-results .surface-card {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--border-color) !important;
+}
+#stock-results .glass-panel::before,
+#stock-results .surface-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-teal), var(--accent-cyan), transparent);
+  opacity: 0.35;
+  z-index: 1;
+}
+
+/* ── 3. Stock Header Redesign ── */
+#stock-results .stock-header {
+  padding: 22px 24px !important;
+  background: linear-gradient(135deg, var(--card-bg), color-mix(in srgb, var(--accent-teal) 4%, var(--card-bg))) !important;
+}
+#stock-results .stock-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 24px; right: 24px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-teal), var(--primary-color), var(--accent-purple), transparent);
+  border-radius: 2px;
+  opacity: 0.5;
+}
+#stock-results .stock-title h1 {
+  font-size: 1.55rem !important;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  background: linear-gradient(135deg, var(--text-primary) 60%, var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+#stock-results .stock-price-block h2 {
+  font-size: 2rem !important;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+#stock-results .badge.variant {
+  background: color-mix(in srgb, var(--accent-teal) 12%, transparent);
+  color: var(--accent-teal);
+  border-color: color-mix(in srgb, var(--accent-teal) 30%, transparent);
+  font-weight: 700;
+}
+
+/* ── 4. KPI Hero Strip ── */
+.stock-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.stock-kpi-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--v8-radius-lg);
+  padding: 16px 18px;
+  background: var(--card-bg);
+  transition: border-color .25s, transform .2s, box-shadow .25s;
+}
+.stock-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+.stock-kpi-card:nth-child(1)::before { background: linear-gradient(90deg, var(--accent-teal), var(--accent-cyan)); }
+.stock-kpi-card:nth-child(2)::before { background: linear-gradient(90deg, var(--primary-color), #818cf8); }
+.stock-kpi-card:nth-child(3)::before { background: linear-gradient(90deg, var(--accent-purple), #c084fc); }
+.stock-kpi-card:nth-child(4)::before { background: linear-gradient(90deg, #f59e0b, #fb923c); }
+.stock-kpi-card:hover {
+  border-color: color-mix(in srgb, var(--accent-teal) 40%, var(--border-color));
+  transform: translateY(-2px);
+  box-shadow: var(--glow-teal);
+}
+.kpi-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+.kpi-label i {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+.kpi-value {
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.kpi-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+.kpi-sub.up { color: var(--positive); }
+.kpi-sub.down { color: var(--negative); }
+.kpi-sub.neutral { color: var(--text-secondary); }
+.kpi-bar-track {
+  height: 5px;
+  border-radius: 5px;
+  background: var(--bg-secondary);
+  margin-top: 10px;
+  overflow: hidden;
+}
+.kpi-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width .6s ease;
+}
+.kpi-bar-fill.teal { background: linear-gradient(90deg, var(--accent-teal), var(--accent-cyan)); }
+.kpi-bar-fill.purple { background: linear-gradient(90deg, var(--accent-purple), #c084fc); }
+.kpi-bar-fill.blue { background: linear-gradient(90deg, var(--primary-color), #818cf8); }
+.kpi-bar-fill.amber { background: linear-gradient(90deg, #f59e0b, #fb923c); }
+
+@media (max-width: 820px) {
+  .stock-kpi-strip { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .stock-kpi-strip { grid-template-columns: 1fr; }
+}
+
+/* ── 5. AI Decision Banner Enhancement ── */
+.final-ai-banner.buy {
+  box-shadow: var(--glow-positive) !important;
+  border-left-width: 4px !important;
+  animation: aiBannerPulse 3s ease-in-out infinite;
+}
+.final-ai-banner.sell {
+  box-shadow: var(--glow-negative) !important;
+  border-left-width: 4px !important;
+}
+.final-ai-banner.hold {
+  box-shadow: 0 0 20px rgba(245,158,11,.1), 0 0 50px rgba(245,158,11,.04) !important;
+}
+.final-ai-banner::before {
+  height: 1px !important;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent) !important;
+}
+.final-ai-verdict .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 25%, transparent);
+  font-size: 0.65rem;
+}
+.final-ai-verdict .eyebrow i {
+  color: var(--accent-cyan);
+}
+.final-ai-verdict strong {
+  text-shadow: 0 0 40px currentColor;
+}
+@keyframes aiBannerPulse {
+  0%, 100% { box-shadow: var(--glow-positive); }
+  50% { box-shadow: 0 0 30px rgba(16,185,129,.22), 0 0 80px rgba(16,185,129,.08); }
+}
+
+/* ── 6. Dashboard Panel Upgrades ── */
+
+/* Section heading icons get accent color */
+#stock-results .section-heading h3 i,
+#stock-results .section-heading h4 i {
+  color: var(--accent-teal);
+  opacity: 0.8;
+}
+
+/* Score bars: gradient fills */
+#stock-results .score-bar-bg {
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+#stock-results [id^="score-"] {
+  border-radius: 5px;
+  transition: width 0.8s cubic-bezier(.25,.46,.45,.94);
+}
+#stock-results #score-overall { background: linear-gradient(90deg, #ef4444, #f59e0b 40%, var(--positive) 75%, var(--accent-teal)) !important; }
+#stock-results #score-fund { background: linear-gradient(90deg, var(--primary-color), #818cf8) !important; }
+#stock-results #score-tech { background: linear-gradient(90deg, var(--accent-teal), var(--accent-cyan)) !important; }
+#stock-results #score-val { background: linear-gradient(90deg, #f59e0b, #fb923c) !important; }
+#stock-results #score-risk { background: linear-gradient(90deg, var(--accent-purple), #c084fc) !important; }
+
+/* Mini KPI cards: subtle gradient hover */
+#stock-results .mini-kpi {
+  transition: border-color .25s, transform .2s, box-shadow .25s;
+}
+#stock-results .mini-kpi:hover {
+  border-color: color-mix(in srgb, var(--accent-teal) 35%, var(--border-color));
+  transform: translateY(-1px);
+  box-shadow: var(--glow-teal);
+}
+
+/* Decision verdict cards */
+#stock-results .decision-verdict {
+  transition: border-color .2s, box-shadow .2s;
+}
+#stock-results .decision-buy {
+  text-shadow: 0 0 20px rgba(16,185,129,.35);
+}
+#stock-results .decision-sell {
+  text-shadow: 0 0 20px rgba(239,68,68,.35);
+}
+#stock-results .decision-hold {
+  text-shadow: 0 0 20px rgba(245,158,11,.35);
+}
+
+/* Metric boxes: enhanced with glow on good/bad state */
+#stock-results .metric-box.metric-good {
+  box-shadow: inset 0 0 20px rgba(16,185,129,.04);
+}
+#stock-results .metric-box.metric-bad {
+  box-shadow: inset 0 0 20px rgba(239,68,68,.04);
+}
+#stock-results .metric-box.metric-caution {
+  box-shadow: inset 0 0 20px rgba(245,158,11,.04);
+}
+#stock-results .metric-box {
+  transition: border-color .25s, transform .2s, box-shadow .25s;
+}
+#stock-results .metric-box:hover {
+  transform: translateY(-1px);
+}
+
+/* Trend timeframe cards: glow on active */
+#stock-results .timeframe-bias-card.active {
+  box-shadow: 0 0 0 1px rgba(79,141,247,.18) inset, var(--glow-primary) !important;
+}
+#stock-results .timeframe-bias-card {
+  transition: transform .2s, border-color .2s, background .2s, box-shadow .25s;
+}
+#stock-results .timeframe-bias-card:hover {
+  box-shadow: var(--glow-teal);
+}
+
+/* Level cards: enhanced borders */
+#stock-results .level-card.good {
+  box-shadow: inset 0 0 16px rgba(16,185,129,.05);
+}
+#stock-results .level-card.bad {
+  box-shadow: inset 0 0 16px rgba(239,68,68,.05);
+}
+
+/* News items: improved cards */
+#stock-results a.news-item {
+  transition: border-color .2s, background .2s, transform .2s, box-shadow .25s;
+}
+#stock-results a.news-item:hover {
+  box-shadow: var(--glow-primary);
+}
+
+/* ── 7. Side Column Enhancement ── */
+
+/* Score panel: improved visual hierarchy */
+#stock-results .side-column .glass-panel {
+  transition: border-color .25s, box-shadow .25s;
+}
+#stock-results .side-column .glass-panel:hover {
+  border-color: color-mix(in srgb, var(--accent-teal) 20%, var(--border-color)) !important;
+}
+
+/* ── 8. Feature Highlights Strip ── */
+.feature-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+  padding: 0 4px;
+}
+.feature-chip {
+  appearance: none;
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--v8-radius-lg);
+  background: var(--card-bg);
+  text-align: center;
+  transition: border-color .25s, transform .2s, box-shadow .25s;
+}
+.feature-chip:hover {
+  border-color: color-mix(in srgb, var(--accent-teal) 40%, var(--border-color));
+  transform: translateY(-2px);
+  box-shadow: var(--glow-teal);
+}
+.feature-chip:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 3px;
+}
+.feature-chip-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  color: #fff;
+}
+.feature-chip:nth-child(1) .feature-chip-icon { background: linear-gradient(135deg, var(--accent-teal), #059669); }
+.feature-chip:nth-child(2) .feature-chip-icon { background: linear-gradient(135deg, var(--primary-color), #818cf8); }
+.feature-chip:nth-child(3) .feature-chip-icon { background: linear-gradient(135deg, #f59e0b, #fb923c); }
+.feature-chip:nth-child(4) .feature-chip-icon { background: linear-gradient(135deg, var(--accent-purple), #c084fc); }
+.feature-chip:nth-child(5) .feature-chip-icon { background: linear-gradient(135deg, var(--accent-cyan), #38bdf8); }
+.feature-chip-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+}
+
+@media (max-width: 1050px) { .feature-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 650px) { .feature-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .feature-strip { grid-template-columns: 1fr; } }
+
+/* ── 9. Subtle animations ── */
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.55; }
+}
+#stock-results .glass-panel::before,
+#stock-results .surface-card::before {
+  animation: glowPulse 4s ease-in-out infinite;
+}
+
+/* ── 10. Data quality strip: match new palette ── */
+#stock-results .data-quality-strip {
+  background: linear-gradient(135deg, var(--card-bg), color-mix(in srgb, var(--accent-cyan) 3%, var(--card-bg))) !important;
+}
+
+/* ── 11. Chart container: deeper bg for charts ── */
+#stock-results .candle-panel {
+  background: linear-gradient(180deg, var(--card-bg), color-mix(in srgb, var(--bg-primary) 40%, var(--card-bg))) !important;
+}
+
+/* ── 12. Segmented controls: teal accent on active ── */
+#stock-results .segment-btn.active {
+  background: linear-gradient(135deg, var(--primary-color), color-mix(in srgb, var(--accent-cyan) 25%, var(--primary-color))) !important;
+  box-shadow: 0 3px 12px rgba(0,212,170,.18) !important;
+}
+
+/* ── Light theme overrides: keep things sane ── */
+[data-theme="light"] .stock-kpi-card { background: var(--card-bg); }
+[data-theme="light"] #stock-results .glass-panel::before,
+[data-theme="light"] #stock-results .surface-card::before { opacity: 0.18; }
+[data-theme="light"] .final-ai-banner.buy { box-shadow: 0 0 12px rgba(16,185,129,.08) !important; }
+[data-theme="light"] .final-ai-banner.sell { box-shadow: 0 0 12px rgba(239,68,68,.08) !important; }
+[data-theme="light"] .feature-chip:hover { box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+[data-theme="light"] #stock-results .stock-title h1 {
+  background: none; -webkit-text-fill-color: var(--text-primary);
 }

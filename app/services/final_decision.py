@@ -26,7 +26,26 @@ def get_final_stock_decision(payload: dict, force_refresh: bool = False) -> dict
             cached["cache"] = "hit"
             return cached
 
-    ai = synthesize_final_stock_decision(payload)
+    ai_available = True
+    error = None
+    try:
+        ai = synthesize_final_stock_decision(payload)
+    except Exception as exc:
+        ai_available = False
+        error = str(exc)[:180]
+        technical = str((payload.get("technical_decision") or {}).get("recommendation") or "").upper()
+        rating = str((payload.get("stock_synthesis") or {}).get("rating") or "").upper()
+        rating_decision = "BUY" if rating in {"STRONG BUY", "BUY", "ACCUMULATE"} else "SELL" if rating in {"SELL", "REDUCE"} else "HOLD"
+        decision = technical if technical in {"BUY", "HOLD", "SELL"} else rating_decision
+        if technical in {"BUY", "SELL"} and rating_decision in {"BUY", "SELL"} and technical != rating_decision:
+            decision = "HOLD"
+        ai = {
+            "decision": decision,
+            "confidence": "low",
+            "summary": "The final AI synthesis timed out; the conservative evidence-based classification is shown.",
+            "key_drivers": [f"Technical decision: {technical or 'unavailable'}", f"Stock synthesis: {rating or 'unavailable'}"],
+            "key_risks": [f"AI synthesis unavailable: {error}"],
+        }
     decision = str(ai.get("decision") or "HOLD").upper()
     if decision not in {"BUY", "HOLD", "SELL"}:
         decision = "HOLD"
@@ -42,7 +61,9 @@ def get_final_stock_decision(payload: dict, force_refresh: bool = False) -> dict
         "summary": str(ai.get("summary") or "Evidence is mixed; wait for a clearer setup.")[:700],
         "key_drivers": _clean_list(ai.get("key_drivers")),
         "key_risks": _clean_list(ai.get("key_risks")),
-        "source": "nemotron_all_evidence",
+        "source": "nemotron_all_evidence" if ai_available else "deterministic_evidence_fallback",
+        "ai_available": ai_available,
+        "error": error,
         "cache": "miss",
         "disclaimer": "AI research classification only, not personalized investment advice. Market conditions can invalidate the decision, target, stop-loss and candle projection.",
     }

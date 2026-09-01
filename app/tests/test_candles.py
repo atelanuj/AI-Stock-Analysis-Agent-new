@@ -22,15 +22,17 @@ def test_doji_is_neutral():
 
 
 def test_multi_horizon_biases_and_dynamic_levels():
-    idx = pd.date_range("2025-01-01", periods=260, freq="B")
-    close = pd.Series([100 + i * 0.25 + (i % 9 - 4) * 0.15 for i in range(260)], index=idx, dtype=float)
+    idx = pd.date_range("2021-01-01", periods=1300, freq="B")
+    close = pd.Series([100 + i * 0.08 + (i % 9 - 4) * 0.15 for i in range(1300)], index=idx, dtype=float)
     hist = pd.DataFrame({"High":close+1.2,"Low":close-1.1,"Close":close}, index=idx)
     technical = {"rsi14":58.0,"macd":2.0,"macd_signal":1.0,"volume":{"relative_volume":1.4}}
     result = _multi_horizon_outlook(close, technical, [], hist, 2.0)
-    assert list(result.keys()) == ["1D","1W","1M","3M","6M","1Y"]
+    assert list(result.keys()) == ["1D","1W","1M","3M","6M","1Y","3Y","5Y"]
     assert result["1D"]["lookback_sessions"] == 1
     assert result["1W"]["lookback_sessions"] == 5
     assert result["1M"]["lookback_sessions"] == 21
+    assert result["3Y"]["lookback_sessions"] == 756
+    assert result["5Y"]["lookback_sessions"] == 1260
     assert all(0 <= result[h]["signal_agreement_pct"] <= 100 for h in result)
     assert all("levels" in result[h] for h in result)
     assert all("risk_reward" in result[h] for h in result)

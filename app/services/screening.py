@@ -65,9 +65,9 @@ def screen_stocks(request: StockScreenRequest) -> dict:
     valid=[]; errors=[]
 
     # One batched Yahoo history request replaces one history request per stock.
-    histories = batch_history(symbols, request.market, period="1y")
+    histories = batch_history(symbols, request.market, period="5y")
     # Warm the shared benchmark cache once before worker threads start.
-    try: get_benchmark_close(request.market)
+    try: get_benchmark_close(request.market, period="5y")
     except Exception: pass
 
     def work(symbol):

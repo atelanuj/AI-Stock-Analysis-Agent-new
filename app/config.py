@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     ai_temperature: float = 0.3
     ai_top_p: float = 0.95
     ai_max_tokens: int = 8192
+    ai_fast_max_tokens: int = 2048
+    ai_request_timeout_seconds: float = 60
     ai_enable_thinking: bool = True
     ai_reasoning_budget: int = 8192
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

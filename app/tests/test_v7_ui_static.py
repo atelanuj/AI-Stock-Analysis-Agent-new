@@ -6,7 +6,7 @@ JS = (ROOT / "app/static/app.js").read_text(encoding="utf-8")
 
 
 def test_v7_has_clickable_1d_technical_horizon_and_decision_panel():
-    assert "order=['1D','1W','1M','3M','6M','1Y']" in JS
+    assert "order=['1D','1W','1M','3M','6M','1Y','3Y','5Y']" in JS
     assert 'id="tech-decision-action"' in HTML
     assert 'id="tech-target"' in HTML
     assert 'id="tech-stop"' in HTML

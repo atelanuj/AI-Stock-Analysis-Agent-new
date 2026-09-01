@@ -29,6 +29,7 @@ from app.services.portfolio_risk import portfolio_risk_analysis
 from app.db.database import import_technical_recommendations, list_technical_recommendations
 from app.services.recommendation_history import recommendation_performance
 from app.tools.market_data import get_price_history
+from app.tools.market_validation import get_validated_quote
 from app.tools.mutual_funds import search_indian_mf, search_us_funds
 from app.tools.technical import get_ohlcv_history, predict_next_candle
 from app.tools.universe import available_universes, get_stock_universe
@@ -129,6 +130,16 @@ def stock_history(symbol:str,market:str|None=None,period:str="1y"):
     try:return get_price_history(symbol,market,period)
     except Exception as exc:raise HTTPException(status_code=500,detail=str(exc))
 
+@app.get("/api/quote/{symbol}")
+def stock_quote(symbol:str,market:str="IN",force_refresh:bool=False):
+    try:
+        quote=get_validated_quote(symbol.upper(),market.upper(),None,force_refresh)
+        price=quote.get("price")
+        if price is None:raise ValueError(f"Current price unavailable for {symbol.upper()}")
+        return {"symbol":symbol.upper(),"market":market.upper(),"current_price":price,"currency":quote.get("currency") or ("INR" if market.upper()=="IN" else "USD"),"as_of":quote.get("as_of"),"source":quote.get("source"),"validation_status":quote.get("validation_status")}
+    except ValueError as exc:raise HTTPException(status_code=404,detail=str(exc))
+    except Exception as exc:raise HTTPException(status_code=500,detail=str(exc))
+
 @app.get("/backtest/{symbol}")
 def backtest(symbol:str,market:str="IN",period:str="5y"):
     try:return backtest_stock_strategy(symbol.upper(),market,period)
@@ -184,8 +195,8 @@ def intraday_ai(symbol:str, market:str="IN", interval:str="5m", force_refresh:bo
     except Exception as exc:raise HTTPException(status_code=500,detail=str(exc))
 
 @app.get("/ipo/list")
-def ipo_list(market:str="IN", month:str|None=None):
-    try:return list_ipos(market,month)
+def ipo_list(market:str="IN", month:str|None=None, force_refresh:bool=False):
+    try:return list_ipos(market,month,force_refresh)
     except Exception as exc:raise HTTPException(status_code=500,detail=str(exc))
 
 @app.get("/ipo/analyze/{identifier}")
@@ -260,8 +271,8 @@ def fund_category(identifier:str, market:str="IN"):
     except Exception as exc:raise HTTPException(status_code=500,detail=str(exc))
 
 @app.get("/market/overview")
-def market_overview(market:str="IN"):
-    try:return get_market_overview(market)
+def market_overview(market:str="IN",force_refresh:bool=False):
+    try:return get_market_overview(market,force_refresh)
     except Exception as exc:raise HTTPException(status_code=500,detail=str(exc))
 
 @app.post("/portfolio/risk")

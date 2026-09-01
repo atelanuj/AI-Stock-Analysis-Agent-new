@@ -45,10 +45,10 @@ def _normalize_in(row:dict,status:str)->dict:
     return {"id":str(symbol or name).strip(),"market":"IN","symbol":str(symbol).strip(),"name":str(name or "Unknown issue").strip(),"status":status,"open_date":row.get("issueStartDate") or row.get("openDate") or row.get("biddingStartDate"),"close_date":row.get("issueEndDate") or row.get("closeDate") or row.get("biddingEndDate"),"listing_date":row.get("listingDate"),"price_band":row.get("priceBand") or row.get("issuePrice") or row.get("priceRange"),"lot_size":_num(row.get("lotSize") or row.get("marketLot")),"issue_size":row.get("issueSize") or row.get("issueSizeInCrores"),"shares_offered":_num(row.get("noOfSharesOffered")),"shares_bid":_num(row.get("noOfsharesBid") or row.get("noOfSharesBid")),"subscription_x":sub,"raw":{k:v for k,v in row.items() if isinstance(v,(str,int,float,bool,type(None)))},"source":"NSE India public issue feed","source_url":"https://www.nseindia.com/market-data/all-upcoming-issues-ipo"}
 
 
-def _sebi_filings(limit:int=30)->list[dict]:
+def _sebi_filings(limit:int=30,force_refresh:bool=False)->list[dict]:
     key="ipo:v8:sebi-filings"
     c=get_json(key)
-    if c:return c
+    if c and not force_refresh:return c
     url="https://www.sebi.gov.in/sebiweb/home/HomeAction.do?doListing=yes&sid=3&smid=0&ssid=15"
     try:
         r=requests.get(url,headers=_HEADERS,timeout=12);r.raise_for_status();soup=BeautifulSoup(r.text,"html.parser");out=[]
@@ -65,9 +65,9 @@ def _sebi_filings(limit:int=30)->list[dict]:
     except Exception:return []
 
 
-def list_india_ipos()->dict:
+def list_india_ipos(force_refresh:bool=False)->dict:
     key="ipo:v8:list:IN";c=get_json(key)
-    if c:return c
+    if c and not force_refresh:return c
     current=[];upcoming=[];errors=[]
     try:current=[_normalize_in(x,"OPEN/CURRENT") for x in _flatten(_nse_get("/api/ipo-current-issue"))]
     except Exception as exc:errors.append(f"NSE current issues: {str(exc)[:120]}")
@@ -78,7 +78,7 @@ def list_india_ipos()->dict:
         keyid=(x.get("symbol") or x.get("name")).upper()
         if keyid in seen:continue
         seen.add(keyid);issues.append(x)
-    filings=_sebi_filings()
+    filings=_sebi_filings(force_refresh=force_refresh)
     # If NSE's undocumented web API is blocked, keep the IPO desk useful by
     # surfacing recent official SEBI filing entries as low-completeness research
     # candidates. They remain WATCH until stronger issue evidence is available.
@@ -89,12 +89,17 @@ def list_india_ipos()->dict:
             cleaned=re.sub(r"\b(DRHP|RHP|RED HERRING PROSPECTUS|PROSPECTUS|ABRIDGED PROSPECTUS)\b","",title,flags=re.I)
             cleaned=re.sub(r"\s+"," ",cleaned).strip(" -–—:") or title
             issues.append({"id":cleaned,"market":"IN","symbol":"","name":cleaned,"status":"SEBI FILING","open_date":None,"close_date":None,"listing_date":None,"price_band":None,"lot_size":None,"issue_size":None,"subscription_x":None,"source":"SEBI Public Issues filing","source_url":f.get("url"),"filing_title":title})
-    result={"market":"IN","issues":issues,"filings":filings,"errors":errors,"sources":["NSE India current/upcoming public issue feeds","SEBI Public Issues filings"],"note":"NSE web APIs are undocumented and may occasionally block automated requests. If they are unavailable, recent SEBI filings are shown as low-completeness candidates. No grey-market premium/GMP is used."};set_json(key,result,ttl=600);return result
+    available=bool(issues or filings)
+    note="NSE web APIs are undocumented and may occasionally block automated requests. If they are unavailable, recent SEBI filings are shown as low-completeness candidates. No grey-market premium/GMP is used."
+    if not available:note="IPO sources are temporarily unavailable. Nothing is cached; use Refresh to retry. No GMP is used."
+    result={"market":"IN","issues":issues,"filings":filings,"errors":errors,"available":available,"sources":["NSE India current/upcoming public issue feeds","SEBI Public Issues filings"],"note":note}
+    if available:set_json(key,result,ttl=600)
+    return result
 
 
-def list_us_ipos(month:str|None=None)->dict:
+def list_us_ipos(month:str|None=None,force_refresh:bool=False)->dict:
     month=month or datetime.now(timezone.utc).strftime("%Y-%m");key=f"ipo:v8:list:US:{month}";c=get_json(key)
-    if c:return c
+    if c and not force_refresh:return c
     url="https://api.nasdaq.com/api/ipo/calendar";issues=[];errors=[]
     try:
         r=requests.get(url,params={"date":month},headers={**_HEADERS,"Referer":"https://www.nasdaq.com/market-activity/ipos"},timeout=12);r.raise_for_status();p=r.json();data=(p or {}).get("data") or {}
@@ -104,10 +109,15 @@ def list_us_ipos(month:str|None=None)->dict:
                 symbol=row.get("symbol") or row.get("proposedTickerSymbol") or "";name=row.get("companyName") or row.get("name") or symbol
                 issues.append({"id":str(symbol or name),"market":"US","symbol":symbol,"name":name,"status":status,"open_date":row.get("expectedDate") or row.get("pricedDate"),"close_date":None,"listing_date":row.get("expectedDate"),"price_band":row.get("proposedSharePrice") or row.get("price"),"shares_offered":_num(row.get("sharesOffered")),"deal_size":row.get("dealSize"),"exchange":row.get("proposedExchange"),"raw":row,"source":"Nasdaq IPO Calendar / EDGAR Online","source_url":"https://www.nasdaq.com/market-activity/ipos"})
     except Exception as exc:errors.append(str(exc)[:160])
-    result={"market":"US","month":month,"issues":issues,"errors":errors,"sources":["Nasdaq IPO Calendar (calendar data powered by EDGAR Online)"],"note":"Expected US IPO dates can be estimates. Verify SEC filings and exchange announcements."};set_json(key,result,ttl=900);return result
+    available=not errors or bool(issues)
+    note="Expected US IPO dates can be estimates. Verify SEC filings and exchange announcements."
+    if not available:note="The Nasdaq IPO calendar is temporarily unavailable. Nothing is cached; use Refresh to retry."
+    result={"market":"US","month":month,"issues":issues,"errors":errors,"available":available,"sources":["Nasdaq IPO Calendar (calendar data powered by EDGAR Online)"],"note":note}
+    if available:set_json(key,result,ttl=900)
+    return result
 
 
-def list_ipos(market:str="IN",month:str|None=None)->dict:return list_us_ipos(month) if market.upper()=="US" else list_india_ipos()
+def list_ipos(market:str="IN",month:str|None=None,force_refresh:bool=False)->dict:return list_us_ipos(month,force_refresh) if market.upper()=="US" else list_india_ipos(force_refresh)
 
 
 def _score_issue(issue:dict)->dict:

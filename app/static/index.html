@@ -5,7 +5,7 @@
   <title>Stock AI Agent V8.2</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/static/styles.css?v=8.2.21">
+  <link rel="stylesheet" href="/static/styles.css?v=8.2.24">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script>
 </head>
@@ -22,6 +22,7 @@
     <button class="nav-btn" data-tab="screener"><i class="fa-solid fa-filter"></i><span>Screener</span></button>
     <button class="nav-btn" data-tab="ipo"><i class="fa-solid fa-rocket"></i><span>IPO</span></button>
     <button class="nav-btn" data-tab="portfolio"><i class="fa-solid fa-briefcase"></i><span>Portfolio</span></button>
+    <button class="nav-btn" data-tab="journal"><i class="fa-solid fa-book-open"></i><span>Journal</span></button>
     <button class="nav-btn" data-tab="watchlist"><i class="fa-regular fa-star"></i><span>Watchlist</span></button>
   </nav>
   <div class="header-actions"><button id="chat-open" class="icon-btn chat-header-btn" title="Ask V8"><i class="fa-regular fa-comments"></i></button><button id="theme-toggle" class="icon-btn" title="Toggle theme"><i class="fa-solid fa-moon"></i></button></div>
@@ -30,7 +31,7 @@
 <main class="content-area">
 
 <section id="tab-stocks" class="tab-pane active fade-in">
-  <div class="glass-panel search-container"><div class="search-bar">
+  <div id="stock-form" class="glass-panel search-container"><div class="search-bar">
     <select id="stock-market-select" class="glass-input"><option value="IN">🇮🇳 India (NSE)</option><option value="US">🇺🇸 US (NYSE/NASDAQ)</option></select>
     <input id="stock-search-input" class="glass-input" placeholder="RELIANCE or AAPL" autocomplete="off"><button id="stock-search-btn" class="glass-btn primary"><i class="fa-solid fa-magnifying-glass"></i> Analyze</button>
   </div></div>
@@ -42,11 +43,36 @@
       <div class="stock-title"><h1 id="stock-name">--</h1><span id="stock-symbol" class="badge">--</span></div>
       <div class="stock-actions"><button id="stock-export-btn" class="glass-btn" title="Export current research snapshot"><i class="fa-solid fa-download"></i> Export</button><button id="stock-watch-btn" class="glass-btn"><i class="fa-regular fa-star"></i> Watch</button><div class="stock-price-block"><h2 id="stock-price">--</h2><span id="stock-market-badge" class="badge variant">--</span></div></div>
     </div>
+
+    <div class="stock-kpi-strip">
+      <div class="stock-kpi-card">
+        <div class="kpi-label"><i class="fa-solid fa-chart-line"></i> Price</div>
+        <div id="kpi-price" class="kpi-value">--</div>
+        <div id="kpi-change" class="kpi-sub neutral"><i class="fa-solid fa-minus"></i> --</div>
+      </div>
+      <div class="stock-kpi-card">
+        <div class="kpi-label"><i class="fa-solid fa-arrows-left-right"></i> 52W Range</div>
+        <div id="kpi-range" class="kpi-value" style="font-size:1.1rem">--</div>
+        <div class="kpi-bar-track"><div id="kpi-range-bar" class="kpi-bar-fill blue" style="width:0%"></div></div>
+      </div>
+      <div class="stock-kpi-card">
+        <div class="kpi-label"><i class="fa-solid fa-chart-bar"></i> Volume</div>
+        <div id="kpi-volume" class="kpi-value">--</div>
+        <div id="kpi-vol-sub" class="kpi-sub neutral">Avg volume loading</div>
+        <div class="kpi-bar-track"><div id="kpi-vol-bar" class="kpi-bar-fill purple" style="width:0%"></div></div>
+      </div>
+      <div class="stock-kpi-card">
+        <div class="kpi-label"><i class="fa-solid fa-building-columns"></i> Market Cap</div>
+        <div id="kpi-mcap" class="kpi-value">--</div>
+        <div id="kpi-sector" class="kpi-sub neutral">--</div>
+      </div>
+    </div>
+
     <div id="final-ai-banner" class="glass-panel final-ai-banner pending">
       <div class="final-ai-verdict"><span class="eyebrow"><i class="fa-solid fa-brain"></i> Final AI Decision</span><strong id="final-ai-action">--</strong><span id="final-ai-confidence" class="badge">Waiting</span></div>
       <div class="final-ai-copy"><div id="final-ai-state" class="quality-badge checking"><i class="fa-solid fa-circle-notch"></i> Gathering all evidence</div><p id="final-ai-summary">Waiting for fundamentals, technicals, volume, risk, projected candle, target/stop, news and AI synthesis.</p><div class="final-ai-evidence"><div><b>Key drivers</b><span id="final-ai-drivers">--</span></div><div><b>Key risks</b><span id="final-ai-risks">--</span></div></div><small id="final-ai-disclaimer" class="text-muted">Final classification loads after all research sections are ready.</small></div>
     </div>
-    <div class="glass-panel data-quality-strip">
+    <div id="stock-quality-panel" class="glass-panel data-quality-strip">
       <div class="quality-main"><span id="stock-quality-badge" class="quality-badge checking"><i class="fa-solid fa-shield-halved"></i> Checking sources</span><span id="stock-source-text">Cross-validating quote data…</span></div>
       <div class="quality-meta"><span id="stock-quote-time">--</span><span id="stock-source-diff">--</span></div>
     </div>
@@ -58,7 +84,7 @@
             <div class="chart-controls">
               <span id="candle-ai-state" class="quality-badge checking"><i class="fa-solid fa-circle-notch"></i> AI waiting</span>
               <div id="chart-type-toggle" class="segmented-control"><button type="button" class="segment-btn active" data-chart-type="candlestick">Candles</button><button type="button" class="segment-btn" data-chart-type="line">Line</button></div>
-              <div id="chart-period-toggle" class="segmented-control timeframe-control"><button type="button" class="segment-btn" data-period="1d" title="1 day with 2-minute candles">1D</button><button type="button" class="segment-btn" data-period="5d" title="1 week with 15-minute candles">1W</button><button type="button" class="segment-btn" data-period="1mo" title="1 month with 1-hour candles">1M</button><button type="button" class="segment-btn active" data-period="3mo" title="3 months with 1-hour candles">3M</button><button type="button" class="segment-btn" data-period="6mo" title="6 months with daily candles">6M</button><button type="button" class="segment-btn" data-period="1y" title="1 year with daily candles">1Y</button></div>
+              <div id="chart-period-toggle" class="segmented-control timeframe-control"><button type="button" class="segment-btn" data-period="1d" title="1 day with 2-minute candles">1D</button><button type="button" class="segment-btn" data-period="5d" title="1 week with 15-minute candles">1W</button><button type="button" class="segment-btn" data-period="1mo" title="1 month with 1-hour candles">1M</button><button type="button" class="segment-btn active" data-period="3mo" title="3 months with 1-hour candles">3M</button><button type="button" class="segment-btn" data-period="6mo" title="6 months with daily candles">6M</button><button type="button" class="segment-btn" data-period="1y" title="1 year with daily candles">1Y</button><button type="button" class="segment-btn" data-period="3y" title="3 years with daily candles">3Y</button><button type="button" class="segment-btn" data-period="5y" title="5 years with daily candles">5Y</button></div>
               <button type="button" class="chart-fullscreen-btn" title="Open chart full screen" aria-label="Open Price and Candlestick Analysis chart full screen" data-fullscreen-chart><i class="fa-solid fa-expand"></i><i class="fa-solid fa-compress"></i></button>
             </div>
           </div><div id="chart-data-meta" class="chart-data-meta">Waiting for chart data…</div><div class="chart-plot-wrapper"><div id="candlestick-chart" class="plotly-chart"></div><div class="chart-overlay-toggles"><button type="button" class="chart-toggle-btn active" id="toggle-prediction" title="Toggle AI prediction candle"><i class="fa-solid fa-cube"></i> Prediction</button><button type="button" class="chart-toggle-btn active" id="toggle-trend" title="Toggle AI future trend"><i class="fa-solid fa-arrow-trend-up"></i> Trend</button></div></div><div id="chart-pattern-insight" class="chart-pattern-insight"><div><span>Detected chart pattern</span><b id="chart-pattern-name">Analyzing structure…</b><small id="chart-pattern-note">Trendlines appear after enough validated price history loads.</small></div><div><span>AI future trend</span><b id="chart-future-trend">Waiting for AI…</b><small id="chart-future-note">A dotted projection will appear when the AI returns a valid bounded path.</small></div></div>
@@ -201,6 +227,14 @@
         <div class="glass-panel news-panel"><h3>Recent News</h3><div id="news-list" class="news-list"></div></div>
       </div>
     </div>
+
+    <div class="feature-strip" aria-label="Research workspace shortcuts">
+      <button type="button" class="feature-chip" data-feature-tab="market"><div class="feature-chip-icon"><i class="fa-solid fa-bolt"></i></div><div class="feature-chip-label">Real-Time<br>Market Data</div></button>
+      <button type="button" class="feature-chip" data-feature-tab="stocks" data-feature-target="stock-form"><div class="feature-chip-icon"><i class="fa-solid fa-brain"></i></div><div class="feature-chip-label">AI-Powered<br>Analysis</div></button>
+      <button type="button" class="feature-chip" data-feature-tab="portfolio"><div class="feature-chip-icon"><i class="fa-solid fa-shield-halved"></i></div><div class="feature-chip-label">Smart Risk<br>Management</div></button>
+      <button type="button" class="feature-chip" data-feature-tab="market"><div class="feature-chip-icon"><i class="fa-solid fa-globe"></i></div><div class="feature-chip-label">Multi-Market<br>Support</div></button>
+      <button type="button" class="feature-chip" data-feature-tab="stocks" data-feature-target="stock-quality-panel"><div class="feature-chip-icon"><i class="fa-solid fa-lock"></i></div><div class="feature-chip-label">Validated &<br>Cross-Checked</div></button>
+    </div>
   </div>
 </section>
 
@@ -338,7 +372,7 @@
       <label class="screener-field"><span class="filter-label">Result count</span><select id="screen-result-count" class="glass-input"><option>10</option><option>25</option><option selected>50</option><option>100</option><option>250</option><option>500</option></select><small>Maximum matching rows displayed after filtering.</small></label>
       <label class="screener-field"><span class="filter-label">Minimum score</span><input id="screen-min-score" type="number" class="glass-input" value="50" min="0" max="100" placeholder="Min score"><small>Only keeps assets with an overall research score at or above this 0–100 value.</small></label>
       <label class="screener-field"><span class="filter-label">Trend direction</span><select id="screen-trend" class="glass-input"><option value="ANY">Any trend</option><option value="BULLISH">Bullish</option><option value="NEUTRAL">Neutral</option><option value="BEARISH">Bearish</option></select><small>For stocks, keeps only the selected directional bias.</small></label>
-      <label class="screener-field"><span class="filter-label">Trend timeframe</span><select id="screen-horizon" class="glass-input"><option value="1D">1D trend</option><option value="1W">1W trend</option><option value="1M" selected>1M trend</option><option value="3M">3M trend</option><option value="6M">6M trend</option><option value="1Y">1Y trend</option></select><small>Time horizon used to evaluate stock trend and breakout filters.</small></label>
+      <label class="screener-field"><span class="filter-label">Trend timeframe</span><select id="screen-horizon" class="glass-input"><option value="1D">1D trend</option><option value="1W">1W trend</option><option value="1M" selected>1M trend</option><option value="3M">3M trend</option><option value="6M">6M trend</option><option value="1Y">1Y trend</option><option value="3Y">3Y trend</option><option value="5Y">5Y trend</option></select><small>Time horizon used to evaluate stock trend and breakout filters.</small></label>
       <div class="screener-field screener-action"><span class="filter-label">Apply filters</span><button id="screen-run" class="glass-btn primary"><i class="fa-solid fa-play"></i> Run Screener</button><small>Evaluates candidates using all active filters below.</small></div>
     </div>
     <label class="screener-field screener-symbol-field"><span class="filter-label">Custom candidates or fund search</span><textarea id="screen-input" class="glass-input screener-input" placeholder="Optional stock symbols, comma separated. Blank = selected universe."></textarea><small>Stocks: enter comma-separated symbols or leave blank for the universe. Funds: enter scheme codes/tickers or a search phrase.</small></label>
@@ -385,7 +419,43 @@
   <div id="portfolio-loading" class="loading-state hidden"><div class="spinner"></div><p>Analyzing holdings and normalizing FX...</p></div><div id="portfolio-error" class="error-state hidden glass-panel"><p id="portfolio-error-msg"></p></div>
   <div id="portfolio-results" class="hidden fade-in"><div class="glass-panel metrics-panel"><h3>Portfolio Summary</h3><div class="metrics-grid"><div class="metric-box"><div class="m-label">Market Value</div><div id="pf-value" class="m-val">--</div></div><div class="metric-box"><div class="m-label">P&L</div><div id="pf-pnl" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Quality</div><div id="pf-quality" class="m-val">--</div></div><div class="metric-box"><div class="m-label">Largest Weight</div><div id="pf-concentration" class="m-val">--</div></div></div><p id="pf-fx-note" class="text-muted text-sm"></p></div><div class="glass-panel"><div id="pf-warnings"></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Holding</th><th>Asset</th><th>Market</th><th>Weight</th><th>P&L</th><th>Score</th><th>Rating</th></tr></thead><tbody id="pf-body"></tbody></table></div></div></div>
 <div id="portfolio-risk-results" class="surface-card hidden"><div class="section-heading"><div><h3><i class="fa-solid fa-shield-halved"></i> Portfolio Risk Engine</h3><p class="text-muted text-sm">Historical volatility, VaR, drawdown, sector concentration and correlation.</p></div></div><div id="portfolio-risk-kpis" class="diagnostic-grid"></div><div class="two-panel-grid"><div><h4>Sector concentration</h4><div id="portfolio-sector-risk" class="level-list"></div></div><div><h4>Highest correlations</h4><div id="portfolio-correlations" class="level-list"></div></div></div><p id="portfolio-risk-note" class="text-muted text-sm"></p></div>
-  <div class="surface-card"><div class="section-heading"><div><h3><i class="fa-solid fa-book"></i> Paper Trade Journal</h3><p class="text-muted text-sm">Record simulated ideas locally before risking capital. Nothing here sends an order.</p></div><button id="paper-clear" class="glass-btn">Clear journal</button></div><div class="paper-form"><select id="paper-market" class="glass-input"><option value="IN">India</option><option value="US">US</option></select><input id="paper-symbol" class="glass-input" placeholder="Symbol"><select id="paper-action" class="glass-input"><option>BUY</option><option>HOLD</option><option>SELL</option></select><input id="paper-entry" class="glass-input" type="number" step="any" placeholder="Entry"><input id="paper-target" class="glass-input" type="number" step="any" placeholder="Target"><input id="paper-stop" class="glass-input" type="number" step="any" placeholder="Risk level"><button id="paper-add" class="glass-btn primary">Add idea</button></div><div id="paper-journal" class="table-wrap"></div></div>
+</section>
+
+<section id="tab-journal" class="tab-pane hidden fade-in">
+  <div class="page-intro paper-heading"><div><span class="eyebrow">Simulation workspace</span><h2>Paper Trade Journal</h2><p>Track entries against live prices and targets, review progress visually, and refine ideas without placing an order.</p></div><div class="inline-actions paper-actions"><button id="paper-export" class="glass-btn" type="button" disabled title="Export paper journal as CSV"><i class="fa-solid fa-file-csv"></i> Export CSV</button><button id="paper-import" class="glass-btn" type="button" title="Import and merge a paper journal CSV"><i class="fa-solid fa-file-import"></i> Import CSV</button><button id="paper-refresh" class="glass-btn" type="button"><i class="fa-solid fa-rotate"></i> Refresh prices</button><button id="paper-clear" class="glass-btn" type="button"><i class="fa-regular fa-trash-can"></i> Clear journal</button></div></div>
+  <input id="paper-import-file" class="hidden" type="file" accept=".csv,text/csv">
+  <p id="paper-import-status" class="import-status text-sm" role="status" aria-live="polite"></p>
+
+  <div class="surface-card paper-entry-card">
+    <div class="section-heading"><div><h3><i class="fa-solid fa-plus"></i> New paper idea</h3><p class="text-muted text-sm">Entry and target are required. Stop / risk level and quantity are optional.</p></div></div>
+    <div class="paper-form">
+      <label><span>Market</span><select id="paper-market" class="glass-input"><option value="IN">India</option><option value="US">US</option></select></label>
+      <label><span>Symbol</span><input id="paper-symbol" class="glass-input" placeholder="RELIANCE or AAPL" autocomplete="off"></label>
+      <label><span>Direction</span><select id="paper-action" class="glass-input"><option>BUY</option><option>SELL</option><option>HOLD</option></select></label>
+      <label><span>Entry price</span><input id="paper-entry" class="glass-input" type="number" min="0" step="any" placeholder="Required"></label>
+      <label><span>Target price</span><input id="paper-target" class="glass-input" type="number" min="0" step="any" placeholder="Required"></label>
+      <label><span>Stop / risk <em>Optional</em></span><input id="paper-stop" class="glass-input" type="number" min="0" step="any" placeholder="Optional"></label>
+      <label><span>Quantity <em>Optional</em></span><input id="paper-quantity" class="glass-input" type="number" min="0" step="any" placeholder="Defaults to 1"></label>
+      <label class="paper-notes-field"><span>Trade thesis <em>Optional</em></span><input id="paper-notes" class="glass-input" maxlength="160" placeholder="Why are you taking this trade?"></label>
+      <button id="paper-add" class="glass-btn primary" type="button"><i class="fa-solid fa-plus"></i> Add idea</button>
+    </div>
+    <p id="paper-form-status" class="import-status text-sm" role="status" aria-live="polite"></p>
+  </div>
+
+  <div id="paper-summary" class="paper-summary research-summary-grid"></div>
+
+  <div class="surface-card paper-chart-card">
+    <div class="section-heading chart-heading"><div><h3 id="paper-chart-title"><i class="fa-solid fa-chart-line"></i> Trade map</h3><p id="paper-chart-meta" class="text-muted text-sm">Select a journal row to compare its entry, current price and target.</p></div><span id="paper-quote-state" class="quality-badge single"><i class="fa-solid fa-circle-info"></i> No trade selected</span></div>
+    <div class="paper-chart-layout">
+      <div id="paper-trade-chart" class="plotly-chart" aria-label="Selected paper trade price chart"></div>
+      <div id="paper-trade-detail" class="paper-trade-detail"><p class="text-muted text-sm">Your selected idea’s levels and progress will appear here.</p></div>
+    </div>
+  </div>
+
+  <div class="surface-card">
+    <div class="section-heading"><div><h3><i class="fa-solid fa-list-check"></i> Trade log</h3><p class="text-muted text-sm">Click a row to inspect its chart. Current prices are refreshed on demand and stored with the journal.</p></div></div>
+    <div id="paper-journal" class="table-wrap"></div>
+  </div>
 </section>
 
 <section id="tab-watchlist" class="tab-pane hidden fade-in">
@@ -404,5 +474,5 @@
   <form id="chat-form" class="chat-form"><textarea id="chat-input" class="glass-input" rows="2" placeholder="e.g. Why is this stock HOLD on 1M?"></textarea><button id="chat-send" class="glass-btn primary chat-send-btn" type="submit" aria-label="Send message"><i class="fa-solid fa-paper-plane"></i><span>Send</span></button></form>
 </aside>
 <div id="explain-modal" class="modal hidden"><div class="modal-card glass-panel"><button id="explain-close" class="icon-btn modal-close"><i class="fa-solid fa-xmark"></i></button><h3 id="explain-title">Metric</h3><div id="explain-body" class="modal-body"></div></div></div>
-<script src="/static/app.js?v=8.2.18"></script>
+<script src="/static/app.js?v=8.2.25"></script>
 </body></html>

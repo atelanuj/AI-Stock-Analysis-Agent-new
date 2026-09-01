@@ -1,14 +1,10 @@
 from __future__ import annotations
 
-import math
 from concurrent.futures import ThreadPoolExecutor
-
-import pandas as pd
-import yfinance as yf
 
 from app.cache.redis_cache import get_json,set_json
 from app.config import settings
-from app.tools.data_provider import batch_history
+from app.tools.data_provider import batch_history, get_yahoo_chart_history
 from app.tools.universe import get_stock_universe
 
 _PROXIES={
@@ -17,10 +13,8 @@ _PROXIES={
 }
 
 def _direct(sym):
-    try:h=yf.Ticker(sym).history(period="6mo",auto_adjust=True,repair=True)
-    except Exception:
-        try:h=yf.Ticker(sym).history(period="6mo",auto_adjust=True,repair=False)
-        except:return None
+    try:h=get_yahoo_chart_history(sym,period="6mo",interval="1d",auto_adjust=True)
+    except Exception:return None
     if h is None or h.empty:return None
     c=h["Close"].dropna();
     if len(c)<2:return None
@@ -30,9 +24,9 @@ def _direct(sym):
     s20=float(c.tail(20).mean()) if len(c)>=20 else None;s50=float(c.tail(50).mean()) if len(c)>=50 else None
     return {"price":round(float(c.iloc[-1]),2),"return_1m_pct":ret(21),"return_3m_pct":ret(63),"above_sma20":float(c.iloc[-1])>s20 if s20 else None,"above_sma50":float(c.iloc[-1])>s50 if s50 else None}
 
-def get_market_overview(market:str="IN")->dict:
+def get_market_overview(market:str="IN",force_refresh:bool=False)->dict:
     market=market.upper();key=f"market:v8:overview:{market}";c=get_json(key)
-    if c:return c
+    if c and not force_refresh:return c
     indices=[]
     with ThreadPoolExecutor(max_workers=6) as pool:
         futs=[(name,pool.submit(_direct,sym)) for sym,name in _PROXIES[market]]
@@ -50,4 +44,10 @@ def get_market_overview(market:str="IN")->dict:
         valid+=1;last=float(s.iloc[-1]);above20+=int(last>float(s.tail(20).mean()));above50+=int(last>float(s.tail(50).mean()));above200+=int(len(s)>=200 and last>float(s.tail(200).mean()))
     breadth={"sample_size":valid,"above_sma20_pct":round(above20/valid*100,1) if valid else None,"above_sma50_pct":round(above50/valid*100,1) if valid else None,"above_sma200_pct":round(above200/valid*100,1) if valid else None}
     b=breadth.get("above_sma50_pct");regime="RISK-ON" if b is not None and b>=65 else "RISK-OFF" if b is not None and b<=35 else "MIXED"
-    result={"market":market,"indices":indices,"breadth":breadth,"regime":regime,"note":"Breadth uses the locally available configured universe and can be smaller than the full exchange if provider downloads fail."};set_json(key,result,ttl=settings.benchmark_cache_ttl_seconds);return result
+    available=bool(indices or valid)
+    note="Breadth uses the locally available configured universe and can be smaller than the full exchange if provider downloads fail."
+    if not available:note="Market providers are temporarily unavailable. Nothing is cached; use Refresh to retry."
+    result={"market":market,"indices":indices,"breadth":breadth,"regime":regime,"available":available,"note":note}
+    # Never preserve a transient all-empty provider response for 15 minutes.
+    if available:set_json(key,result,ttl=settings.benchmark_cache_ttl_seconds)
+    return result

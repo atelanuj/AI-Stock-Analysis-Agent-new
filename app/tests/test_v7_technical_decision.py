@@ -12,7 +12,7 @@ def _levels():
 
 def _technical(direction="BULLISH"):
     biases = {}
-    for h in ["1D", "1W", "1M", "3M", "6M", "1Y"]:
+    for h in ["1D", "1W", "1M", "3M", "6M", "1Y", "3Y", "5Y"]:
         biases[h] = {
             "directional_bias": direction,
             "signal_agreement_pct": 82,
@@ -53,6 +53,13 @@ def test_v7_sell_setup_has_target_below_and_risk_above():
     assert result["deterministic_recommendation"] == "SELL"
     assert result["setup"]["target_zone"]["mid"] < 100
     assert result["setup"]["risk_control_level"] > 100
+
+
+def test_long_term_horizons_are_valid_decision_inputs():
+    for horizon in ("3Y", "5Y"):
+        result = build_technical_decision(_technical("BULLISH"), horizon)
+        assert result["horizon"] == horizon
+        assert result["deterministic_recommendation"] == "BUY"
 
 
 def test_ai_rule_disagreement_downgrades_final_action_to_hold(monkeypatch):

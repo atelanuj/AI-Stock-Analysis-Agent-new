@@ -49,3 +49,13 @@ def test_final_decision_rejects_noncanonical_ai_label(monkeypatch):
     assert result["decision"] == "HOLD"
     assert result["confidence"] == "low"
     assert len(result["key_drivers"]) == 4
+
+
+def test_final_decision_uses_safe_fallback_when_ai_times_out(monkeypatch):
+    monkeypatch.setattr(final_decision, "get_json", lambda *a, **k: None)
+    monkeypatch.setattr(final_decision, "set_json", lambda *a, **k: None)
+    monkeypatch.setattr(final_decision, "synthesize_final_stock_decision", lambda payload: (_ for _ in ()).throw(TimeoutError("provider timeout")))
+    result = final_decision.get_final_stock_decision(_payload(), force_refresh=True)
+    assert result["decision"] == "BUY"
+    assert result["ai_available"] is False
+    assert result["source"] == "deterministic_evidence_fallback"

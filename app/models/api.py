@@ -16,7 +16,7 @@ class StockScreenRequest(BaseModel):
     min_overall_score: float = Field(default=0, ge=0, le=100)
     min_technical_score: float = Field(default=0, ge=0, le=100)
     trend_bias: Literal["ANY", "BULLISH", "NEUTRAL", "BEARISH"] = "ANY"
-    trend_horizon: Literal["1D", "1W", "1M", "3M", "6M", "1Y"] = "1M"
+    trend_horizon: Literal["1D", "1W", "1M", "3M", "6M", "1Y", "3Y", "5Y"] = "1M"
     min_market_cap: float | None = Field(default=None, ge=0)
     max_pe: float | None = Field(default=None, gt=0)
     min_roe_pct: float | None = None
@@ -91,7 +91,7 @@ class RecommendationImportItem(BaseModel):
     created_at: datetime | None = None
     symbol: str = Field(min_length=1, max_length=32)
     market: Market
-    horizon: Literal["1D", "1W", "1M", "3M", "6M", "1Y"]
+    horizon: Literal["1D", "1W", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
     recommendation: Literal["BUY", "HOLD", "SELL"]
     ai_recommendation: Literal["BUY", "HOLD", "SELL"] | None = None
     technical_score: float | None = Field(default=None, ge=0, le=100)
@@ -137,7 +137,7 @@ class StrategyBacktestRequest(BaseModel):
 class FinalStockDecisionRequest(BaseModel):
     symbol: str = Field(min_length=1, max_length=32)
     market: Market = "IN"
-    horizon: Literal["1D", "1W", "1M", "3M", "6M", "1Y"] = "3M"
+    horizon: Literal["1D", "1W", "1M", "3M", "6M", "1Y", "3Y", "5Y"] = "3M"
     scores: dict = Field(default_factory=dict)
     market_data: dict = Field(default_factory=dict)
     fundamentals: dict = Field(default_factory=dict)

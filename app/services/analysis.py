@@ -41,15 +41,15 @@ def _pending_ai(det: str) -> dict:
 def analyze_stock_fast(symbol: str, market: str | None = None, force_refresh: bool = False) -> dict:
     """Return price + technical analysis without waiting for Ticker.info/Nemotron."""
     symbol = symbol.strip().upper(); resolved = _resolved_market(symbol, market)
-    key = f"analysis:v6:fast:{resolved}:{symbol}"
+    key = f"analysis:v9:fast:{resolved}:{symbol}"
     if not force_refresh:
         cached = get_json(key)
         if cached:
             cached["cache"] = "hit"
             return cached
     with ThreadPoolExecutor(max_workers=3) as pool:
-        f_hist = pool.submit(get_history_df, symbol, resolved, "1y", "1d", False, force_refresh)
-        f_bench = pool.submit(get_benchmark_close, resolved, force_refresh)
+        f_hist = pool.submit(get_history_df, symbol, resolved, "5y", "1d", False, force_refresh)
+        f_bench = pool.submit(get_benchmark_close, resolved, force_refresh, "5y")
         f_quote = pool.submit(get_validated_quote, symbol, resolved, None, force_refresh)
         hist = f_hist.result(); benchmark = f_bench.result(); quote_snapshot = f_quote.result()
     market_data = get_market_data(symbol, resolved, hist=hist, info={}, quote_snapshot=quote_snapshot)
@@ -83,7 +83,7 @@ def analyze_stock_core(
     """
     symbol = symbol.strip().upper()
     resolved = _resolved_market(symbol, market)
-    cache_key = f"analysis:v6:core:{'validated' if validate_quote else 'bulk'}:{resolved}:{symbol}"
+    cache_key = f"analysis:v9:core:{'validated' if validate_quote else 'bulk'}:{resolved}:{symbol}"
     if not force_refresh and history_override is None and info_override is None:
         cached = get_json(cache_key)
         if cached:
@@ -97,10 +97,10 @@ def analyze_stock_core(
     jobs = {}
     with ThreadPoolExecutor(max_workers=4) as pool:
         if hist is None:
-            jobs["hist"] = pool.submit(get_history_df, symbol, resolved, "1y", "1d", False, force_refresh)
+            jobs["hist"] = pool.submit(get_history_df, symbol, resolved, "5y", "1d", False, force_refresh)
         if info is None:
             jobs["info"] = pool.submit(get_info, symbol, resolved, force_refresh)
-        jobs["benchmark"] = pool.submit(get_benchmark_close, resolved, force_refresh)
+        jobs["benchmark"] = pool.submit(get_benchmark_close, resolved, force_refresh, "5y")
         if validate_quote:
             jobs["quote"] = pool.submit(get_validated_quote, symbol, resolved, None, force_refresh)
         for name, future in jobs.items():
